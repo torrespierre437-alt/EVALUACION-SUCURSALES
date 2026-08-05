@@ -1,0 +1,13 @@
+{
+  "name": "Evaluación de Sucursales",
+  "short_name": "Evaluación",
+  "description": "Evaluación mensual de imagen, mantenimiento y puntualidad de sucursales",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
