@@ -24,7 +24,7 @@ Fórmulas de negocio (documentadas y verificadas contra `DASHBOARD EDIFICIOS.xls
    insert into profiles (id, role, branch_id, full_name, email)
    values ('<uuid del usuario en auth.users>', 'branch', (select id from branches where code = 'BJX'), 'BJX', 'correo@sucursal.com');
    ```
-3. **Resend** (correo): crea cuenta gratis en [resend.com](https://resend.com), genera un API key.
+3. **Correo (Gmail SMTP)**: activa verificación en 2 pasos en tu cuenta de Google y genera una "contraseña de aplicación" en [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords). Se eligió Gmail en vez de un proveedor tipo Resend porque no requiere verificar un dominio propio — útil si no controlas el DNS del dominio corporativo.
 4. **Web Push**: genera tus llaves VAPID con `npx web-push generate-vapid-keys` y guarda la pública/privada.
 5. Copia `.env.example` a `.env.local` y llena todos los valores (incluye un `CRON_SECRET` — cualquier cadena aleatoria).
 6. `npm install` y `npm run dev` para probar localmente en `http://localhost:3000`.
@@ -62,5 +62,5 @@ Compara los cálculos de `src/lib/scoring.ts` contra los valores reales de la su
 - `src/app/api/cron/daily` — automatización mensual (crear evaluaciones, recordatorios, alertas).
 - `src/lib/scoring.ts` — fórmulas puras (testeadas).
 - `src/lib/dashboard.ts` — agregaciones para el dashboard.
-- `src/lib/notifications/` — envío de correo (Resend) y push (Web Push).
+- `src/lib/notifications/` — envío de correo (Gmail SMTP) y push (Web Push).
 - `supabase/migrations/` — esquema, RLS y datos semilla.

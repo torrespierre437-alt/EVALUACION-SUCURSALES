@@ -2,7 +2,9 @@
 
 # Evaluación de Sucursales
 
-Next.js (App Router, TS) + Supabase (Postgres/Auth/RLS) + Resend (correo) + Web Push. Ver README.md para puesta en marcha.
+Next.js (App Router, TS) + Supabase (Postgres/Auth/RLS) + Gmail SMTP (correo, vía nodemailer) + Web Push. Ver README.md para puesta en marcha.
+
+Nota: se usa Gmail en vez de un proveedor tipo Resend porque el dominio corporativo (pcponline.mx) no está bajo control del usuario y no pudo verificarse — Gmail no requiere verificar dominio propio.
 
 ## Modelo de datos (supabase/migrations/0001_schema.sql)
 
