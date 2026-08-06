@@ -28,7 +28,8 @@ insert into branches (code, name) values
   ('SLR', 'SLR'),
   ('TIJ', 'TIJ'),
   ('TPQ', 'TPQ'),
-  ('ZAP', 'ZAP');
+  ('ZAP', 'ZAP'),
+  ('MAT', 'MAT');
 
 insert into categories (name, sort_order) values
   ('LIMPIEZA', 0),
