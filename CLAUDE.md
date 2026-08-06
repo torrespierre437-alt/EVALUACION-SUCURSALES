@@ -33,6 +33,12 @@ Un solo endpoint, un solo cron diario (`vercel.json`, 13:00 UTC). Decide la acci
 
 Probar con `?date=YYYY-MM-DD&secret=<CRON_SECRET>` para simular cualquier día sin esperar al calendario.
 
+**El formulario NO depende de que el cron ya haya corrido**: `src/lib/evaluations.ts` (`ensureCurrentEvaluation`) crea la evaluación del periodo que corresponda (según el día real) la primera vez que la sucursal entra a `/sucursal/[code]`, con la `due_date` correcta para que la puntualidad se siga calculando bien aunque se cree tarde. El cron sigue siendo responsable de las notificaciones y de cerrar como `no_enviado` lo que nunca se llenó.
+
+## Evidencia fotográfica (supabase/migrations/0004_photo_evidence.sql)
+
+`evaluation_answers.photo_url` guarda la URL pública de la foto subida al bucket de Storage `evidence` (público, con policies por carpeta: `evidence/{branch_id}/{evaluation_id}/{checklist_item_id}-*`). La subida ocurre client-side en `checklist-form.tsx` vía `@/lib/supabase/client` antes de enviar el formulario; `submitEvaluation` solo persiste la URL ya subida.
+
 ## Convenciones
 
 - Cliente Supabase: `@/lib/supabase/client` (browser), `@/lib/supabase/server` (Server Components/actions, respeta RLS), `createServiceRoleClient()` de `@/lib/supabase/server` solo dentro de rutas server-only como el cron (bypassa RLS, nunca importar desde un componente cliente).

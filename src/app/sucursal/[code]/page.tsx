@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ChecklistForm } from "./checklist-form";
 import { FollowupsPanel } from "./followups-panel";
 import { HistoryChart } from "./history-chart";
+import { currentMonthPeriods, ensureCurrentEvaluation } from "@/lib/evaluations";
 import type { Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup } from "@/lib/supabase/types";
 
 export default async function SucursalPage({ params }: { params: Promise<{ code: string }> }) {
@@ -40,7 +41,14 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
       .order("created_at", { ascending: false }),
   ]);
 
-  const pendingEvaluation = (evaluations as Evaluation[] | null)?.find((e) => e.status === "pendiente");
+  const allEvaluations = (evaluations as Evaluation[] | null) ?? [];
+  let pendingEvaluation = allEvaluations.find((e) => e.status === "pendiente") ?? null;
+
+  if (!pendingEvaluation) {
+    const { month, year } = currentMonthPeriods(new Date());
+    const monthEvaluations = allEvaluations.filter((e) => e.month === month && e.year === year);
+    pendingEvaluation = await ensureCurrentEvaluation(supabase, branch.id, monthEvaluations);
+  }
 
   let existingAnswers: EvaluationAnswer[] = [];
   if (pendingEvaluation) {
@@ -66,6 +74,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
       {pendingEvaluation ? (
         <ChecklistForm
           evaluation={pendingEvaluation}
+          branchId={branch.id}
           branchCode={branch.code}
           categories={(categories as Category[]) ?? []}
           items={(items as ChecklistItem[]) ?? []}
@@ -73,7 +82,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
         />
       ) : (
         <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
-          No hay una evaluación pendiente por enviar en este momento.
+          Ya enviaste la evaluación inicial y de seguimiento de este mes. ¡Gracias!
         </p>
       )}
 

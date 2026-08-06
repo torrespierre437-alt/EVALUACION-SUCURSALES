@@ -2,24 +2,33 @@
 
 import { useState, useTransition } from "react";
 import { submitEvaluation } from "./actions";
+import { createClient } from "@/lib/supabase/client";
 import type { Category, ChecklistItem, Evaluation, EvaluationAnswer } from "@/lib/supabase/types";
+
+type Answer = { value: 0 | 1; comment?: string; photo_url?: string };
 
 type Props = {
   evaluation: Evaluation;
+  branchId: string;
   branchCode: string;
   categories: Category[];
   items: ChecklistItem[];
   existingAnswers: EvaluationAnswer[];
 };
 
-export function ChecklistForm({ evaluation, branchCode, categories, items, existingAnswers }: Props) {
-  const [answers, setAnswers] = useState<Record<string, { value: 0 | 1; comment?: string }>>(() => {
-    const initial: Record<string, { value: 0 | 1; comment?: string }> = {};
+export function ChecklistForm({ evaluation, branchId, branchCode, categories, items, existingAnswers }: Props) {
+  const [answers, setAnswers] = useState<Record<string, Answer>>(() => {
+    const initial: Record<string, Answer> = {};
     for (const a of existingAnswers) {
-      initial[a.checklist_item_id] = { value: a.value, comment: a.comment ?? undefined };
+      initial[a.checklist_item_id] = {
+        value: a.value,
+        comment: a.comment ?? undefined,
+        photo_url: a.photo_url ?? undefined,
+      };
     }
     return initial;
   });
+  const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
 
@@ -40,8 +49,29 @@ export function ChecklistForm({ evaluation, branchCode, categories, items, exist
   function setComment(itemId: string, comment: string) {
     setAnswers((prev) => ({
       ...prev,
-      [itemId]: { value: prev[itemId]?.value ?? 1, comment },
+      [itemId]: { ...prev[itemId], value: prev[itemId]?.value ?? 1, comment },
     }));
+  }
+
+  async function handlePhoto(itemId: string, file: File) {
+    setUploadingItemId(itemId);
+    try {
+      const supabase = createClient();
+      const ext = file.name.split(".").pop() || "jpg";
+      const path = `${branchId}/${evaluation.id}/${itemId}-${Date.now()}.${ext}`;
+      const { error } = await supabase.storage.from("evidence").upload(path, file, { upsert: true });
+      if (error) throw error;
+      const { data } = supabase.storage.from("evidence").getPublicUrl(path);
+      setAnswers((prev) => ({
+        ...prev,
+        [itemId]: { ...prev[itemId], value: prev[itemId]?.value ?? 1, photo_url: data.publicUrl },
+      }));
+    } catch (err) {
+      console.error("Error subiendo foto:", err);
+      alert("No se pudo subir la foto. Intenta de nuevo.");
+    } finally {
+      setUploadingItemId(null);
+    }
   }
 
   function handleSubmit() {
@@ -109,6 +139,32 @@ export function ChecklistForm({ evaluation, branchCode, categories, items, exist
                     defaultValue={answers[item.id]?.comment ?? ""}
                     onBlur={(e) => setComment(item.id, e.target.value)}
                   />
+                  <div className="flex items-center gap-3">
+                    <label className="cursor-pointer rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">
+                      {uploadingItemId === item.id ? "Subiendo..." : "📷 Adjuntar foto"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="hidden"
+                        disabled={uploadingItemId === item.id}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePhoto(item.id, file);
+                          e.target.value = "";
+                        }}
+                      />
+                    </label>
+                    {answers[item.id]?.photo_url && (
+                      <a href={answers[item.id]?.photo_url} target="_blank" rel="noreferrer">
+                        <img
+                          src={answers[item.id]?.photo_url}
+                          alt="Evidencia"
+                          className="h-10 w-10 rounded object-cover"
+                        />
+                      </a>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>

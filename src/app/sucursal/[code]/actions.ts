@@ -9,7 +9,7 @@ import type { ChecklistItem } from "@/lib/supabase/types";
 export async function submitEvaluation(
   evaluationId: string,
   branchCode: string,
-  answers: Record<string, { value: 0 | 1; comment?: string }>,
+  answers: Record<string, { value: 0 | 1; comment?: string; photo_url?: string }>,
   items: ChecklistItem[]
 ) {
   const supabase = await createClient();
@@ -26,6 +26,7 @@ export async function submitEvaluation(
     checklist_item_id,
     value: a.value,
     comment: a.comment ?? null,
+    photo_url: a.photo_url ?? null,
   }));
 
   const { error: answersError } = await supabase

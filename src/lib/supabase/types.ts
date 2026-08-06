@@ -49,6 +49,7 @@ export interface EvaluationAnswer {
   checklist_item_id: string;
   value: 0 | 1;
   comment: string | null;
+  photo_url: string | null;
 }
 
 export interface Followup {
