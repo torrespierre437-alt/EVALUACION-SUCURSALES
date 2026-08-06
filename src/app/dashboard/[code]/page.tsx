@@ -146,7 +146,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
+    <div className="mx-auto min-w-0 max-w-3xl space-y-6 px-4 py-6">
       <header>
         <Link href="/dashboard" className="text-xs text-slate-400 underline">
           ← Volver al dashboard

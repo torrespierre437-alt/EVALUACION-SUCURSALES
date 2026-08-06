@@ -44,11 +44,21 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
   const allEvaluations = (evaluations as Evaluation[] | null) ?? [];
   let pendingEvaluation = allEvaluations.find((e) => e.status === "pendiente") ?? null;
 
+  const { month, year } = currentMonthPeriods(new Date());
+  const monthEvaluations = allEvaluations.filter((e) => e.month === month && e.year === year);
+
   if (!pendingEvaluation) {
-    const { month, year } = currentMonthPeriods(new Date());
-    const monthEvaluations = allEvaluations.filter((e) => e.month === month && e.year === year);
     pendingEvaluation = await ensureCurrentEvaluation(supabase, branch.id, monthEvaluations);
   }
+
+  const inicialSubmitted = monthEvaluations.some((e) => e.period === "inicial" && e.status !== "pendiente");
+  const seguimientoSubmitted = monthEvaluations.some((e) => e.period === "seguimiento" && e.status !== "pendiente");
+  const completionMessage =
+    inicialSubmitted && seguimientoSubmitted
+      ? "Ya enviaste la evaluación inicial y de seguimiento de este mes. ¡Gracias!"
+      : inicialSubmitted
+        ? "Ya enviaste tu evaluación inicial de este mes. La de seguimiento se habilita a partir del día 27."
+        : "No hay una evaluación pendiente por enviar en este momento.";
 
   let existingAnswers: EvaluationAnswer[] = [];
   if (pendingEvaluation) {
@@ -60,7 +70,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 px-4 py-6">
+    <div className="mx-auto min-w-0 max-w-2xl space-y-6 px-4 py-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-900">{branch.name}</h1>
@@ -82,7 +92,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
         />
       ) : (
         <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
-          Ya enviaste la evaluación inicial y de seguimiento de este mes. ¡Gracias!
+          {completionMessage}
         </p>
       )}
 

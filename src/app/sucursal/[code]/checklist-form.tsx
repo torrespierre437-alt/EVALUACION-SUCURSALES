@@ -41,6 +41,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
 
   const total = items.length;
   const answered = Object.keys(answers).length;
+  const progressPct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
   function setValue(itemId: string, value: 0 | 1) {
     setAnswers((prev) => ({ ...prev, [itemId]: { ...prev[itemId], value } }));
@@ -90,14 +91,22 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-        <p className="text-sm text-slate-600">
-          {answered} de {total} puntos respondidos
-        </p>
-        <p className="text-xs text-slate-400">
-          Periodo: {evaluation.period === "inicial" ? "Inicial" : "Seguimiento"} · Vence {evaluation.due_date}
-        </p>
+    <div className="space-y-6 pb-20">
+      <div className="sticky top-0 z-10 -mx-4 space-y-2 border-b border-slate-200 bg-slate-50/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-lg sm:border sm:bg-white">
+        <div className="flex items-center justify-between">
+          <p className="text-sm font-medium text-slate-700">
+            {answered} de {total} puntos respondidos
+          </p>
+          <p className="text-xs text-slate-400">
+            {evaluation.period === "inicial" ? "Inicial" : "Seguimiento"} · Vence {evaluation.due_date}
+          </p>
+        </div>
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
+          <div
+            className="h-full rounded-full bg-slate-900 transition-all"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
       </div>
 
       {categories.map((cat) => {
@@ -109,76 +118,88 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
               {cat.name}
             </h3>
             <ul className="divide-y divide-slate-100">
-              {catItems.map((item) => (
-                <li key={item.id} className="space-y-2 px-4 py-3">
-                  <p className="text-sm text-slate-700">{item.description}</p>
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-1.5 text-sm">
-                      <input
-                        type="radio"
-                        name={`item-${item.id}`}
-                        checked={answers[item.id]?.value === 1}
-                        onChange={() => setValue(item.id, 1)}
-                      />
-                      Cumple
-                    </label>
-                    <label className="flex items-center gap-1.5 text-sm">
-                      <input
-                        type="radio"
-                        name={`item-${item.id}`}
-                        checked={answers[item.id]?.value === 0}
-                        onChange={() => setValue(item.id, 0)}
-                      />
-                      No cumple
-                    </label>
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Comentario (opcional)"
-                    className="w-full rounded-md border border-slate-200 px-2 py-1 text-xs"
-                    defaultValue={answers[item.id]?.comment ?? ""}
-                    onBlur={(e) => setComment(item.id, e.target.value)}
-                  />
-                  <div className="flex items-center gap-3">
-                    <label className="cursor-pointer rounded-md border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50">
-                      {uploadingItemId === item.id ? "Subiendo..." : "📷 Adjuntar foto"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        capture="environment"
-                        className="hidden"
-                        disabled={uploadingItemId === item.id}
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (file) handlePhoto(item.id, file);
-                          e.target.value = "";
-                        }}
-                      />
-                    </label>
-                    {answers[item.id]?.photo_url && (
-                      <a href={answers[item.id]?.photo_url} target="_blank" rel="noreferrer">
-                        <img
-                          src={answers[item.id]?.photo_url}
-                          alt="Evidencia"
-                          className="h-10 w-10 rounded object-cover"
+              {catItems.map((item) => {
+                const answer = answers[item.id];
+                return (
+                  <li key={item.id} className="space-y-3 px-4 py-4">
+                    <p className="text-sm text-slate-700">{item.description}</p>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setValue(item.id, 1)}
+                        className={`min-h-11 rounded-md border px-3 text-sm font-medium transition-colors ${
+                          answer?.value === 1
+                            ? "border-green-600 bg-green-600 text-white"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        ✓ Cumple
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setValue(item.id, 0)}
+                        className={`min-h-11 rounded-md border px-3 text-sm font-medium transition-colors ${
+                          answer?.value === 0
+                            ? "border-red-600 bg-red-600 text-white"
+                            : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        ✕ No cumple
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      placeholder="Comentario (opcional)"
+                      className="min-h-11 w-full rounded-md border border-slate-200 px-3 text-sm"
+                      defaultValue={answer?.comment ?? ""}
+                      onBlur={(e) => setComment(item.id, e.target.value)}
+                    />
+
+                    <div className="flex items-center gap-3">
+                      <label className="flex min-h-11 cursor-pointer items-center rounded-md border border-slate-200 px-3 text-sm text-slate-600 hover:bg-slate-50">
+                        {uploadingItemId === item.id ? "Subiendo..." : "📷 Adjuntar foto"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          className="hidden"
+                          disabled={uploadingItemId === item.id}
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handlePhoto(item.id, file);
+                            e.target.value = "";
+                          }}
                         />
-                      </a>
-                    )}
-                  </div>
-                </li>
-              ))}
+                      </label>
+                      {answer?.photo_url && (
+                        <a href={answer.photo_url} target="_blank" rel="noreferrer">
+                          <img
+                            src={answer.photo_url}
+                            alt="Evidencia"
+                            className="h-11 w-11 rounded object-cover"
+                          />
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         );
       })}
 
-      <button
-        onClick={handleSubmit}
-        disabled={isPending || answered < total}
-        className="w-full rounded-md bg-slate-900 px-4 py-2.5 text-sm font-medium text-white disabled:opacity-40"
-      >
-        {isPending ? "Enviando..." : "Enviar evaluación"}
-      </button>
+      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-slate-200 bg-white p-3 sm:static sm:border-0 sm:bg-transparent sm:p-0">
+        <button
+          onClick={handleSubmit}
+          disabled={isPending || answered < total}
+          className="mx-auto block min-h-12 w-full max-w-2xl rounded-md bg-slate-900 px-4 text-sm font-medium text-white disabled:opacity-40"
+        >
+          {isPending ? "Enviando..." : answered < total ? `Faltan ${total - answered} puntos` : "Enviar evaluación"}
+        </button>
+      </div>
     </div>
   );
 }

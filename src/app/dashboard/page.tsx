@@ -78,7 +78,7 @@ export default async function DashboardPage() {
     : null;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 px-4 py-6">
+    <div className="mx-auto min-w-0 max-w-6xl space-y-8 px-4 py-6">
       <header className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-slate-900">Dashboard de sucursales</h1>
