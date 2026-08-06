@@ -7,13 +7,26 @@ import { createClient } from "@/lib/supabase/client";
 export default function ResetPasswordPage() {
   const router = useRouter();
   const [ready, setReady] = useState(false);
+  const [linkError, setLinkError] = useState(false);
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "saving" | "done" | "error">("idle");
 
   useEffect(() => {
     const supabase = createClient();
-    // El link de recuperación deja a supabase-js en un estado "PASSWORD_RECOVERY";
-    // hasta que eso ocurra no hay sesión válida para cambiar la contraseña.
+
+    // El cliente de @supabase/ssr usa flujo PKCE: el link de recuperación llega con
+    // ?code=... en la URL y hay que canjearlo explícitamente por una sesión (no llega
+    // como hash ni dispara "PASSWORD_RECOVERY" solo con cargar la página).
+    const code = new URLSearchParams(window.location.search).get("code");
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) setLinkError(true);
+        else setReady(true);
+      });
+      return;
+    }
+
+    // Respaldo por si el proyecto usa el flujo antiguo (tokens en el hash).
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event === "PASSWORD_RECOVERY") setReady(true);
     });
@@ -44,7 +57,15 @@ export default function ResetPasswordPage() {
           <p className="mt-1 text-sm text-slate-500">Escribe la contraseña que quieres usar de ahora en adelante.</p>
         </div>
 
-        {!ready ? (
+        {linkError ? (
+          <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">
+            Este link ya expiró o ya se usó. Pide uno nuevo desde{" "}
+            <a href="/forgot-password" className="underline">
+              ¿Olvidaste tu contraseña?
+            </a>
+            .
+          </p>
+        ) : !ready ? (
           <p className="text-sm text-slate-500">Verificando el link...</p>
         ) : status === "done" ? (
           <p className="rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
