@@ -30,6 +30,17 @@ export function buildBranchRows(branches: Branch[], evaluations: Evaluation[], m
   });
 }
 
+/**
+ * Evaluación a usar para la matriz de categorías: la más reciente que YA se envió
+ * (tiene evaluation_score). Un "seguimiento" que existe pero sigue pendiente (vacío)
+ * no debe tapar los datos de un "inicial" ya enviado.
+ */
+export function latestSubmittedEvaluationId(row: BranchRow): string | null {
+  if (row.followUp?.evaluation_score !== null && row.followUp?.evaluation_score !== undefined) return row.followUp.id;
+  if (row.initial?.evaluation_score !== null && row.initial?.evaluation_score !== undefined) return row.initial.id;
+  return null;
+}
+
 export type CategoryMatrixRow = {
   branchCode: string;
   scoresByCategory: Record<string, number | null>; // categoryId -> % 0-100

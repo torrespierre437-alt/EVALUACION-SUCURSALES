@@ -27,9 +27,19 @@ export async function ensureCurrentEvaluation(
 ): Promise<Evaluation | null> {
   const now = new Date();
   const { year, month, inicialDue, seguimientoDue } = currentMonthPeriods(now);
+  const day = now.getUTCDate();
 
   const inicial = monthEvaluations.find((e) => e.period === "inicial");
   const seguimiento = monthEvaluations.find((e) => e.period === "seguimiento");
+
+  // El periodo "seguimiento" no se ofrece antes del día 27, aunque "inicial" ya se
+  // haya enviado — antes se creaba de inmediato al terminar "inicial", lo cual rompía
+  // el dashboard (tomaba esa evaluación vacía en vez de la ya llenada).
+  if (day < 27) {
+    if (inicial?.status === "pendiente") return inicial;
+    if (!inicial) return createEvaluation(supabase, branchId, "inicial", month, year, inicialDue);
+    return null;
+  }
 
   if (inicial?.status === "pendiente") return inicial;
   if (!inicial) return createEvaluation(supabase, branchId, "inicial", month, year, inicialDue);
