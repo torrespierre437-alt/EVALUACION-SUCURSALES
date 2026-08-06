@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { login } from "./actions";
 
 export default async function LoginPage({
@@ -56,6 +57,10 @@ export default async function LoginPage({
         >
           Entrar
         </button>
+
+        <Link href="/forgot-password" className="block text-center text-xs text-slate-400 underline">
+          ¿Olvidaste tu contraseña?
+        </Link>
       </form>
     </div>
   );

@@ -24,7 +24,7 @@ const ADMIN_EMAIL = "torrespierre437@gmail.com";
 // sucursal necesita un correo distinto.
 const BRANCH_DOMAIN = "pcponline.mx";
 const BRANCH_CODES = [
-  "BJX", "CCA", "CEN", "CLN", "CSL", "ENS", "GDL", "GML", "GSV", "GYM",
+  "BJX", "CCA", "CEN", "CUL", "CSL", "ENS", "GDL", "GML", "GSV", "GYM",
   "HMO", "IZT", "LAP", "LMM", "MEX", "MXL", "MZT", "NJA", "NOG", "PBC",
   "QRO", "SLR", "TIJ", "TPQ", "ZAP",
 ];

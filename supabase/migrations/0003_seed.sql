@@ -1,12 +1,13 @@
 -- Datos de catálogo: sucursales, categorías y puntos de checklist con sus pesos.
 -- Generado a partir de DASHBOARD EDIFICIOS.xlsx (hojas Hoja1/Hoja2).
 -- NOTA: el Excel de origen contiene 25 sucursales (no 26); agrega/edita filas aquí si falta alguna.
+-- El código 'CLN' del Excel original era un error de captura; el código real es 'CUL' (Culiacán).
 
 insert into branches (code, name) values
   ('BJX', 'BJX'),
   ('CCA', 'CCA'),
   ('CEN', 'CEN'),
-  ('CLN', 'CLN'),
+  ('CUL', 'CUL'),
   ('CSL', 'CSL'),
   ('ENS', 'ENS'),
   ('GDL', 'GDL'),
