@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
+import { MessageSquare } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "../status-badge";
 import type {
@@ -130,7 +131,12 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
                       {answer.value === 1 ? "Cumple" : "No cumple"}
                     </span>
                   </div>
-                  {answer.comment && <p className="text-xs text-slate-500">💬 {answer.comment}</p>}
+                  {answer.comment && (
+                    <p className="flex items-start gap-1 text-xs text-slate-500">
+                      <MessageSquare className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                      {answer.comment}
+                    </p>
+                  )}
                   {answer.photo_url && (
                     <a href={answer.photo_url} target="_blank" rel="noreferrer">
                       <img src={answer.photo_url} alt="Evidencia" className="h-20 w-20 rounded object-cover" />

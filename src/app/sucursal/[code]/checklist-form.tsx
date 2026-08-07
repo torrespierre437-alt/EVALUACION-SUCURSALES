@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { Check, X, Camera, CheckCircle2, Loader2 } from "lucide-react";
 import { saveAnswer, submitEvaluation } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image";
@@ -177,7 +178,8 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                             : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                         }`}
                       >
-                        ✓ Cumple
+                        <Check className="mr-1 inline h-4 w-4" aria-hidden="true" />
+                        Cumple
                       </button>
                       <button
                         type="button"
@@ -188,7 +190,8 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                             : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
                         }`}
                       >
-                        ✕ No cumple
+                        <X className="mr-1 inline h-4 w-4" aria-hidden="true" />
+                        No cumple
                       </button>
                     </div>
 
@@ -201,12 +204,18 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                     />
 
                     <div className="flex items-center gap-3">
-                      <label className="flex min-h-11 cursor-pointer items-center rounded-md border border-slate-200 px-3 text-sm text-slate-600 hover:bg-slate-50">
-                        {uploadingItemId === item.id
-                          ? photoStage === "compressing"
-                            ? "Preparando foto..."
-                            : "Subiendo..."
-                          : "📷 Adjuntar foto"}
+                      <label className="flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md border border-slate-200 px-3 text-sm text-slate-600 hover:bg-slate-50">
+                        {uploadingItemId === item.id ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                            {photoStage === "compressing" ? "Preparando foto..." : "Subiendo..."}
+                          </>
+                        ) : (
+                          <>
+                            <Camera className="h-4 w-4" aria-hidden="true" />
+                            Adjuntar foto
+                          </>
+                        )}
                         <input
                           type="file"
                           accept="image/*"
@@ -233,7 +242,12 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
 
                     <p className="h-4 text-xs">
                       {saveState === "saving" && <span className="text-slate-400">Guardando…</span>}
-                      {saveState === "saved" && <span className="text-green-600">✓ Guardado</span>}
+                      {saveState === "saved" && (
+                        <span className="inline-flex items-center gap-1 text-green-600">
+                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          Guardado
+                        </span>
+                      )}
                       {saveState === "error" && <span className="text-red-600">No se pudo guardar, revisa tu conexión</span>}
                     </p>
                   </li>
