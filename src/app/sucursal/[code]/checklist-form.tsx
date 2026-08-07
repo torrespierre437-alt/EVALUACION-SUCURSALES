@@ -142,7 +142,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
         </div>
         <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-200">
           <div
-            className="h-full rounded-full bg-slate-900 transition-all"
+            className="h-full rounded-full bg-brand transition-all"
             style={{ width: `${progressPct}%` }}
           />
         </div>
@@ -248,7 +248,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
         <button
           onClick={handleSubmit}
           disabled={isPending || answered < total}
-          className="mx-auto block min-h-12 w-full max-w-2xl rounded-md bg-slate-900 px-4 text-sm font-medium text-white disabled:opacity-40"
+          className="mx-auto block min-h-12 w-full max-w-2xl rounded-md bg-brand px-4 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-40"
         >
           {isPending ? "Enviando..." : answered < total ? `Faltan ${total - answered} puntos` : "Enviar evaluación"}
         </button>

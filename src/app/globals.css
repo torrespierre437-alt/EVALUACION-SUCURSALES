@@ -10,6 +10,12 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Colores de marca PCP (extraídos del logo oficial). */
+  --color-brand: #00016d;
+  --color-brand-dark: #000048;
+  --color-accent: #d6000c;
+  --color-accent-dark: #a50009;
 }
 
 @media (prefers-color-scheme: dark) {

@@ -80,12 +80,16 @@ export default async function DashboardPage() {
   return (
     <div className="mx-auto min-w-0 max-w-6xl space-y-8 px-4 py-6">
       <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold text-slate-900">Dashboard de sucursales</h1>
-          <p className="text-sm text-slate-500">
-            {allBranches.length} sucursales · Mes en curso ·{" "}
-            {nationalAvg !== null ? `Promedio nacional: ${nationalAvg}%` : "Sin datos aún este mes"}
-          </p>
+        <div className="flex items-center gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icons/icon-192.png" alt="PCP" className="h-10 w-10 rounded-md" />
+          <div>
+            <h1 className="text-lg font-semibold text-slate-900">Dashboard de sucursales</h1>
+            <p className="text-sm text-slate-500">
+              {allBranches.length} sucursales · Mes en curso ·{" "}
+              {nationalAvg !== null ? `Promedio nacional: ${nationalAvg}%` : "Sin datos aún este mes"}
+            </p>
+          </div>
         </div>
         <form action="/logout" method="post">
           <button className="text-xs text-slate-400 underline">Salir</button>

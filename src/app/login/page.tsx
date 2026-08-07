@@ -14,8 +14,10 @@ export default async function LoginPage({
         action={login}
         className="w-full max-w-sm space-y-4 rounded-xl border border-slate-200 bg-white p-8 shadow-sm"
       >
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900">Evaluación de sucursales</h1>
+        <div className="text-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/LOGO.jpg" alt="PCP - Paquetería y Carga del Pacífico" className="mx-auto h-16 w-auto" />
+          <h1 className="mt-3 text-xl font-semibold text-slate-900">Evaluación de sucursales</h1>
           <p className="mt-1 text-sm text-slate-500">Inicia sesión con tu cuenta de sucursal o admin.</p>
         </div>
 
@@ -34,7 +36,7 @@ export default async function LoginPage({
             name="email"
             type="email"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
           />
         </div>
 
@@ -47,13 +49,13 @@ export default async function LoginPage({
             name="password"
             type="password"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full rounded-md bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800"
+          className="w-full rounded-md bg-brand px-3 py-2.5 text-sm font-medium text-white hover:bg-brand-dark"
         >
           Entrar
         </button>
