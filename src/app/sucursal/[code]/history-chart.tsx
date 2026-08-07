@@ -17,7 +17,7 @@ export function HistoryChart({ evaluations }: { evaluations: Evaluation[] }) {
     }));
 
   if (data.length === 0) {
-    return <p className="text-sm text-slate-400">Aún no hay evaluaciones enviadas.</p>;
+    return <p className="text-sm text-slate-500">Aún no hay evaluaciones enviadas.</p>;
   }
 
   return (

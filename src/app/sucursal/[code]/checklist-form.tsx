@@ -137,7 +137,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
           <p className="text-sm font-medium text-slate-700">
             {answered} de {total} puntos respondidos
           </p>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-500">
             {evaluation.period === "inicial" ? "Inicial" : "Seguimiento"} · Vence {evaluation.due_date}
           </p>
         </div>
@@ -147,7 +147,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
             style={{ width: `${progressPct}%` }}
           />
         </div>
-        <p className="text-xs text-slate-400">
+        <p className="text-xs text-slate-500">
           Tus respuestas se guardan solas conforme las vas contestando — puedes cerrar la app y seguir después.
         </p>
       </div>
@@ -241,7 +241,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                     </div>
 
                     <p className="h-4 text-xs">
-                      {saveState === "saving" && <span className="text-slate-400">Guardando…</span>}
+                      {saveState === "saving" && <span className="text-slate-500">Guardando…</span>}
                       {saveState === "saved" && (
                         <span className="inline-flex items-center gap-1 text-green-600">
                           <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />

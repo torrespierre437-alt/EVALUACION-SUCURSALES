@@ -82,7 +82,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
       return (
         <div className="rounded-lg border border-slate-200 bg-white p-4">
           <h3 className="text-sm font-semibold text-slate-800">{label}</h3>
-          <p className="mt-1 text-sm text-slate-400">Aún no se ha creado este mes.</p>
+          <p className="mt-1 text-sm text-slate-500">Aún no se ha creado este mes.</p>
         </div>
       );
     }
@@ -95,7 +95,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
           <div>
             <h3 className="text-sm font-semibold text-slate-800">{label}</h3>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Vence {evaluation.due_date}
               {evaluation.submitted_at && ` · Enviado ${new Date(evaluation.submitted_at).toLocaleString("es-MX")}`}
             </p>
@@ -111,7 +111,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
         </div>
 
         {evalAnswers.length === 0 ? (
-          <p className="p-4 text-sm text-slate-400">Sin respuestas todavía.</p>
+          <p className="p-4 text-sm text-slate-500">Sin respuestas todavía.</p>
         ) : (
           <ul className="divide-y divide-slate-100">
             {allItems.map((item) => {
@@ -120,7 +120,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
               const category = categoryById.get(item.category_id);
               return (
                 <li key={item.id} className="space-y-1 px-4 py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-slate-400">{category?.name}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{category?.name}</p>
                   <div className="flex items-start justify-between gap-3">
                     <p className="text-sm text-slate-700">{item.description}</p>
                     <span
@@ -154,7 +154,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
   return (
     <div className="mx-auto min-w-0 max-w-3xl space-y-6 px-4 py-6">
       <header>
-        <Link href="/dashboard" className="text-xs text-slate-400 underline">
+        <Link href="/dashboard" className="text-xs text-slate-500 underline">
           ← Volver al dashboard
         </Link>
         <h1 className="mt-1 text-lg font-semibold text-slate-900">{branch.name}</h1>
@@ -169,7 +169,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
           Pendientes / seguimiento ({allFollowups.length})
         </h2>
         {allFollowups.length === 0 ? (
-          <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-400">
+          <p className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
             Sin pendientes registrados.
           </p>
         ) : (
@@ -193,7 +193,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
                     </li>
                   ))}
                   {(notesByFollowupId[f.id] ?? []).length === 0 && (
-                    <li className="text-xs text-slate-400">Sin notas de seguimiento todavía.</li>
+                    <li className="text-xs text-slate-500">Sin notas de seguimiento todavía.</li>
                   )}
                 </ul>
               </li>

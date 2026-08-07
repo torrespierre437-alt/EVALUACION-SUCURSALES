@@ -2,7 +2,7 @@ import type { Category } from "@/lib/supabase/types";
 import type { CategoryMatrixRow } from "@/lib/dashboard";
 
 function cellColor(pct: number | null) {
-  if (pct === null) return "text-slate-300";
+  if (pct === null) return "text-slate-500";
   if (pct >= 90) return "text-green-700";
   if (pct >= 75) return "text-amber-700";
   return "text-red-700";

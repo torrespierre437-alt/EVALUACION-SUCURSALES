@@ -36,7 +36,7 @@ export default async function LoginPage({
             name="email"
             type="email"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
         </div>
 
@@ -49,7 +49,7 @@ export default async function LoginPage({
             name="password"
             type="password"
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
           />
         </div>
 
@@ -60,7 +60,7 @@ export default async function LoginPage({
           Entrar
         </button>
 
-        <Link href="/forgot-password" className="block text-center text-xs text-slate-400 underline">
+        <Link href="/forgot-password" className="block text-center text-xs text-slate-500 underline">
           ¿Olvidaste tu contraseña?
         </Link>
       </form>

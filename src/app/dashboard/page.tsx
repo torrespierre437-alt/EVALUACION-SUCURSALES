@@ -1,14 +1,26 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { buildBranchRows, buildCategoryMatrix, buildNationalTrend, latestSubmittedEvaluationId } from "@/lib/dashboard";
+import {
+  buildBranchRows,
+  buildCategoryMatrix,
+  buildNationalTrend,
+  latestSubmittedEvaluationId,
+  monthLabel,
+} from "@/lib/dashboard";
 import { RankingChart } from "./ranking-chart";
 import { TrendChart } from "./trend-chart";
 import { CategoryMatrix } from "./category-matrix";
 import { StatusBadge } from "./status-badge";
+import { ExportButton } from "./export-button";
 import type { Branch, Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup } from "@/lib/supabase/types";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string; year?: string }>;
+}) {
   const supabase = await createClient();
 
   const {
@@ -20,8 +32,13 @@ export default async function DashboardPage() {
   if (profile?.role !== "admin") redirect("/login");
 
   const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  const params = await searchParams;
+  const month = clampMonth(Number(params.month)) ?? now.getMonth() + 1;
+  const year = Number(params.year) || now.getFullYear();
+  const isCurrentMonth = month === now.getMonth() + 1 && year === now.getFullYear();
+
+  const prev = { month: month === 1 ? 12 : month - 1, year: month === 1 ? year - 1 : year };
+  const next = { month: month === 12 ? 1 : month + 1, year: month === 12 ? year + 1 : year };
 
   const [{ data: branches }, { data: categories }, { data: items }, { data: evaluations }, { data: followups }] =
     await Promise.all([
@@ -86,18 +103,56 @@ export default async function DashboardPage() {
           <div>
             <h1 className="text-lg font-semibold text-slate-900">Dashboard de sucursales</h1>
             <p className="text-sm text-slate-500">
-              {allBranches.length} sucursales · Mes en curso ·{" "}
-              {nationalAvg !== null ? `Promedio nacional: ${nationalAvg}%` : "Sin datos aún este mes"}
+              {allBranches.length} sucursales ·{" "}
+              {nationalAvg !== null ? `Promedio nacional: ${nationalAvg}%` : "Sin datos este mes"}
             </p>
           </div>
         </div>
         <form action="/logout" method="post">
-          <button className="text-xs text-slate-400 underline">Salir</button>
+          <button className="text-xs text-slate-500 underline">Salir</button>
         </form>
       </header>
 
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+        <div className="flex items-center gap-1">
+          <Link
+            href={`/dashboard?month=${prev.month}&year=${prev.year}`}
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+            aria-label="Mes anterior"
+          >
+            <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+          </Link>
+          <p className="w-32 text-center text-sm font-medium text-slate-700 capitalize">
+            {monthLabel(month, year)}
+            {isCurrentMonth && <span className="ml-1 text-xs font-normal text-brand">(actual)</span>}
+          </p>
+          <Link
+            href={`/dashboard?month=${next.month}&year=${next.year}`}
+            className="rounded-md p-1.5 text-slate-500 hover:bg-slate-100"
+            aria-label="Mes siguiente"
+          >
+            <ChevronRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
+        </div>
+        <ExportButton
+          month={month}
+          year={year}
+          categories={allCategories}
+          branchRows={branchRows.map((r) => ({
+            code: r.branch.code,
+            categoryScores: categoryMatrixRows.find((c) => c.branchCode === r.branch.code)?.scoresByCategory ?? {},
+            punctualityPct: r.monthlyPunctualityPct,
+            finalScorePct: r.finalScorePct,
+            initialStatus: r.initial?.status ?? "pendiente",
+            followUpStatus: r.followUp?.status ?? "pendiente",
+          }))}
+        />
+      </div>
+
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">Ranking nacional — calificación final del mes</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">
+          Ranking — calificación final de {monthLabel(month, year)}
+        </h2>
         <RankingChart data={rankingData} />
       </section>
 
@@ -107,12 +162,12 @@ export default async function DashboardPage() {
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">Cumplimiento por categoría (mes en curso)</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Cumplimiento por categoría de {monthLabel(month, year)}</h2>
         <CategoryMatrix categories={allCategories} rows={categoryMatrixRows} />
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">Puntualidad de envío (mes en curso)</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Puntualidad de envío de {monthLabel(month, year)}</h2>
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           <table className="min-w-full text-sm">
             <thead>
@@ -157,7 +212,7 @@ export default async function DashboardPage() {
         </h2>
         <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
           {allFollowups.length === 0 ? (
-            <p className="p-4 text-sm text-slate-400">No hay pendientes abiertos en ninguna sucursal.</p>
+            <p className="p-4 text-sm text-slate-500">No hay pendientes abiertos en ninguna sucursal.</p>
           ) : (
             <table className="min-w-full text-sm">
               <thead>
@@ -201,4 +256,9 @@ export default async function DashboardPage() {
       </section>
     </div>
   );
+}
+
+function clampMonth(month: number): number | null {
+  if (!Number.isFinite(month) || month < 1 || month > 12) return null;
+  return month;
 }

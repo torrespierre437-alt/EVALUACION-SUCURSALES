@@ -4,7 +4,7 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContai
 
 export function TrendChart({ data }: { data: { label: string; promedio: number; puntualidad: number }[] }) {
   if (data.length === 0) {
-    return <p className="text-sm text-slate-400">Aún no hay historial suficiente.</p>;
+    return <p className="text-sm text-slate-500">Aún no hay historial suficiente.</p>;
   }
   return (
     <div className="h-72 w-full rounded-lg border border-slate-200 bg-white p-4">

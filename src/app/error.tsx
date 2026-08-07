@@ -22,7 +22,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         >
           Reintentar
         </button>
-        <a href="/" className="block text-xs text-slate-400 underline">
+        <a href="/" className="block text-xs text-slate-500 underline">
           Volver al inicio
         </a>
       </div>

@@ -45,7 +45,7 @@ export function FollowupsPanel({
     <div className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <h3 className="text-sm font-semibold text-slate-800">Pendientes / seguimiento</h3>
 
-      {followups.length === 0 && <p className="text-sm text-slate-400">Sin pendientes abiertos.</p>}
+      {followups.length === 0 && <p className="text-sm text-slate-500">Sin pendientes abiertos.</p>}
 
       <ul className="space-y-3">
         {followups.map((f) => (
@@ -61,7 +61,7 @@ export function FollowupsPanel({
               </button>
             </div>
             {f.last_note_at && (
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-500">
                 Último seguimiento: {new Date(f.last_note_at).toLocaleDateString("es-MX")} — {f.last_note}
               </p>
             )}

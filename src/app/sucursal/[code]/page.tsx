@@ -81,7 +81,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
           </div>
         </div>
         <form action="/logout" method="post">
-          <button className="text-xs text-slate-400 underline">Salir</button>
+          <button className="text-xs text-slate-500 underline">Salir</button>
         </form>
       </header>
 
