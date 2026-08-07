@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { submitEvaluation } from "./actions";
+import { useRef, useState, useTransition } from "react";
+import { saveAnswer, submitEvaluation } from "./actions";
 import { createClient } from "@/lib/supabase/client";
+import { compressImage } from "@/lib/image";
 import type { Category, ChecklistItem, Evaluation, EvaluationAnswer } from "@/lib/supabase/types";
 
 type Answer = { value: 0 | 1; comment?: string; photo_url?: string };
+type SaveState = "idle" | "saving" | "saved" | "error";
+type PhotoStage = "compressing" | "uploading";
 
 type Props = {
   evaluation: Evaluation;
@@ -28,9 +31,20 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
     }
     return initial;
   });
+  const [saveStateByItem, setSaveStateByItem] = useState<Record<string, SaveState>>(() => {
+    const initial: Record<string, SaveState> = {};
+    for (const a of existingAnswers) initial[a.checklist_item_id] = "saved";
+    return initial;
+  });
   const [uploadingItemId, setUploadingItemId] = useState<string | null>(null);
+  const [photoStage, setPhotoStage] = useState<PhotoStage>("compressing");
   const [isPending, startTransition] = useTransition();
   const [done, setDone] = useState(false);
+
+  // Autoguardado: cada respuesta se manda a la base al momento, no solo hasta el
+  // final. Se guarda una "versión" por item para descartar respuestas de guardados
+  // viejos que lleguen tarde (ej. si el usuario cambia de opinión varias veces rápido).
+  const saveVersionRef = useRef<Record<string, number>>({});
 
   const itemsByCategory = new Map<string, ChecklistItem[]>();
   for (const item of items) {
@@ -43,30 +57,55 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
   const answered = Object.keys(answers).length;
   const progressPct = total > 0 ? Math.round((answered / total) * 100) : 0;
 
+  async function persist(itemId: string, answer: Answer) {
+    const version = (saveVersionRef.current[itemId] ?? 0) + 1;
+    saveVersionRef.current[itemId] = version;
+    setSaveStateByItem((prev) => ({ ...prev, [itemId]: "saving" }));
+    try {
+      await saveAnswer(evaluation.id, itemId, answer);
+      if (saveVersionRef.current[itemId] !== version) return; // llegó una respuesta más nueva
+      setSaveStateByItem((prev) => ({ ...prev, [itemId]: "saved" }));
+    } catch (err) {
+      console.error("Error autoguardando respuesta:", err);
+      if (saveVersionRef.current[itemId] !== version) return;
+      setSaveStateByItem((prev) => ({ ...prev, [itemId]: "error" }));
+    }
+  }
+
   function setValue(itemId: string, value: 0 | 1) {
-    setAnswers((prev) => ({ ...prev, [itemId]: { ...prev[itemId], value } }));
+    setAnswers((prev) => {
+      const next = { ...prev, [itemId]: { ...prev[itemId], value } };
+      persist(itemId, next[itemId]);
+      return next;
+    });
   }
 
   function setComment(itemId: string, comment: string) {
-    setAnswers((prev) => ({
-      ...prev,
-      [itemId]: { ...prev[itemId], value: prev[itemId]?.value ?? 1, comment },
-    }));
+    setAnswers((prev) => {
+      const next = { ...prev, [itemId]: { ...prev[itemId], value: prev[itemId]?.value ?? 1, comment } };
+      persist(itemId, next[itemId]);
+      return next;
+    });
   }
 
   async function handlePhoto(itemId: string, file: File) {
     setUploadingItemId(itemId);
     try {
+      setPhotoStage("compressing");
+      const compressed = await compressImage(file);
+      setPhotoStage("uploading");
+
       const supabase = createClient();
-      const ext = file.name.split(".").pop() || "jpg";
+      const ext = compressed.name.split(".").pop() || "jpg";
       const path = `${branchId}/${evaluation.id}/${itemId}-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from("evidence").upload(path, file, { upsert: true });
+      const { error } = await supabase.storage.from("evidence").upload(path, compressed, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from("evidence").getPublicUrl(path);
-      setAnswers((prev) => ({
-        ...prev,
-        [itemId]: { ...prev[itemId], value: prev[itemId]?.value ?? 1, photo_url: data.publicUrl },
-      }));
+      setAnswers((prev) => {
+        const next = { ...prev, [itemId]: { ...prev[itemId], value: prev[itemId]?.value ?? 1, photo_url: data.publicUrl } };
+        persist(itemId, next[itemId]);
+        return next;
+      });
     } catch (err) {
       console.error("Error subiendo foto:", err);
       alert("No se pudo subir la foto. Intenta de nuevo.");
@@ -107,6 +146,9 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
             style={{ width: `${progressPct}%` }}
           />
         </div>
+        <p className="text-xs text-slate-400">
+          Tus respuestas se guardan solas conforme las vas contestando — puedes cerrar la app y seguir después.
+        </p>
       </div>
 
       {categories.map((cat) => {
@@ -120,6 +162,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
             <ul className="divide-y divide-slate-100">
               {catItems.map((item) => {
                 const answer = answers[item.id];
+                const saveState = saveStateByItem[item.id] ?? "idle";
                 return (
                   <li key={item.id} className="space-y-3 px-4 py-4">
                     <p className="text-sm text-slate-700">{item.description}</p>
@@ -159,7 +202,11 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
 
                     <div className="flex items-center gap-3">
                       <label className="flex min-h-11 cursor-pointer items-center rounded-md border border-slate-200 px-3 text-sm text-slate-600 hover:bg-slate-50">
-                        {uploadingItemId === item.id ? "Subiendo..." : "📷 Adjuntar foto"}
+                        {uploadingItemId === item.id
+                          ? photoStage === "compressing"
+                            ? "Preparando foto..."
+                            : "Subiendo..."
+                          : "📷 Adjuntar foto"}
                         <input
                           type="file"
                           accept="image/*"
@@ -183,6 +230,12 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                         </a>
                       )}
                     </div>
+
+                    <p className="h-4 text-xs">
+                      {saveState === "saving" && <span className="text-slate-400">Guardando…</span>}
+                      {saveState === "saved" && <span className="text-green-600">✓ Guardado</span>}
+                      {saveState === "error" && <span className="text-red-600">No se pudo guardar, revisa tu conexión</span>}
+                    </p>
                   </li>
                 );
               })}

@@ -5,6 +5,30 @@ import { createClient } from "@/lib/supabase/server";
 import { categoryScore, evaluationScore, punctualityScore, daysLateBetween } from "@/lib/scoring";
 import type { ChecklistItem } from "@/lib/supabase/types";
 
+/**
+ * Autoguardado: guarda UNA respuesta al momento (sin cerrar la evaluación ni calcular
+ * el score final), para que no se pierda avance si se corta la conexión o se cierra
+ * la app antes de llegar al botón "Enviar evaluación".
+ */
+export async function saveAnswer(
+  evaluationId: string,
+  checklistItemId: string,
+  answer: { value: 0 | 1; comment?: string; photo_url?: string }
+) {
+  const supabase = await createClient();
+  const { error } = await supabase.from("evaluation_answers").upsert(
+    {
+      evaluation_id: evaluationId,
+      checklist_item_id: checklistItemId,
+      value: answer.value,
+      comment: answer.comment ?? null,
+      photo_url: answer.photo_url ?? null,
+    },
+    { onConflict: "evaluation_id,checklist_item_id" }
+  );
+  if (error) throw error;
+}
+
 /** Guarda las respuestas del checklist, calcula el score y marca la evaluación como enviada. */
 export async function submitEvaluation(
   evaluationId: string,
