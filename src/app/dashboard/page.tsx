@@ -14,6 +14,7 @@ import { TrendChart } from "./trend-chart";
 import { CategoryMatrix } from "./category-matrix";
 import { StatusBadge } from "./status-badge";
 import { ExportButton } from "./export-button";
+import { ArchivePanel } from "./archive-panel";
 import type { Branch, Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup } from "@/lib/supabase/types";
 
 export default async function DashboardPage({
@@ -113,7 +114,7 @@ export default async function DashboardPage({
         </form>
       </header>
 
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2">
         <div className="flex items-center gap-1">
           <Link
             href={`/dashboard?month=${prev.month}&year=${prev.year}`}
@@ -134,19 +135,22 @@ export default async function DashboardPage({
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </Link>
         </div>
-        <ExportButton
-          month={month}
-          year={year}
-          categories={allCategories}
-          branchRows={branchRows.map((r) => ({
-            code: r.branch.code,
-            categoryScores: categoryMatrixRows.find((c) => c.branchCode === r.branch.code)?.scoresByCategory ?? {},
-            punctualityPct: r.monthlyPunctualityPct,
-            finalScorePct: r.finalScorePct,
-            initialStatus: r.initial?.status ?? "pendiente",
-            followUpStatus: r.followUp?.status ?? "pendiente",
-          }))}
-        />
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportButton
+            month={month}
+            year={year}
+            categories={allCategories}
+            branchRows={branchRows.map((r) => ({
+              code: r.branch.code,
+              categoryScores: categoryMatrixRows.find((c) => c.branchCode === r.branch.code)?.scoresByCategory ?? {},
+              punctualityPct: r.monthlyPunctualityPct,
+              finalScorePct: r.finalScorePct,
+              initialStatus: r.initial?.status ?? "pendiente",
+              followUpStatus: r.followUp?.status ?? "pendiente",
+            }))}
+          />
+          <ArchivePanel month={month} year={year} monthLabel={monthLabel(month, year)} />
+        </div>
       </div>
 
       <section>
