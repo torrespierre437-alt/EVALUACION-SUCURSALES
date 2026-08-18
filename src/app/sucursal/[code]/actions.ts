@@ -34,7 +34,8 @@ export async function submitEvaluation(
   evaluationId: string,
   branchCode: string,
   answers: Record<string, { value: 0 | 1; comment?: string; photo_url?: string }>,
-  items: ChecklistItem[]
+  items: ChecklistItem[],
+  signatureUrl: string
 ) {
   const supabase = await createClient();
 
@@ -82,6 +83,7 @@ export async function submitEvaluation(
       punctuality_score: punctuality,
       evaluation_score: score,
       status,
+      signature_url: signatureUrl,
     })
     .eq("id", evaluationId);
   if (updateError) throw updateError;

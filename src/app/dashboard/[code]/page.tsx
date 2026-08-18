@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, FileDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "../status-badge";
 import type {
@@ -106,6 +106,15 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
               <span className="text-sm font-semibold text-slate-800">
                 {Math.round(evaluation.evaluation_score * 100)}%
               </span>
+            )}
+            {evaluation.submitted_at && (
+              <a
+                href={`/api/admin/evaluation-pdf?evaluationId=${evaluation.id}`}
+                className="flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              >
+                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                PDF
+              </a>
             )}
           </div>
         </div>

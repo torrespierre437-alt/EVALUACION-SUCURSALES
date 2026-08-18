@@ -5,6 +5,8 @@ import { createClient } from "@/lib/supabase/server";
 import {
   buildBranchRows,
   buildCategoryMatrix,
+  buildItemFailureRanking,
+  buildMonthComparison,
   buildNationalTrend,
   latestSubmittedEvaluationId,
   monthLabel,
@@ -12,9 +14,12 @@ import {
 import { RankingChart } from "./ranking-chart";
 import { TrendChart } from "./trend-chart";
 import { CategoryMatrix } from "./category-matrix";
+import { ComparisonTable } from "./comparison-table";
+import { ItemFailureRanking } from "./item-failure-ranking";
 import { StatusBadge } from "./status-badge";
 import { ExportButton } from "./export-button";
 import { ArchivePanel } from "./archive-panel";
+import { BulkPdfButton } from "./bulk-pdf-button";
 import type { Branch, Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup } from "@/lib/supabase/types";
 
 export default async function DashboardPage({
@@ -62,6 +67,8 @@ export default async function DashboardPage({
   const branchByEncId = new Map(allBranches.map((b) => [b.id, b]));
 
   const branchRows = buildBranchRows(allBranches, allEvaluations, month, year);
+  const previousBranchRows = buildBranchRows(allBranches, allEvaluations, prev.month, prev.year);
+  const comparisonRows = buildMonthComparison(branchRows, previousBranchRows);
 
   // Solo se usan evaluaciones que YA se enviaron (evaluation_score no nulo); una
   // "seguimiento" que existe pero sigue en blanco no debe tapar los datos de "inicial".
@@ -84,6 +91,8 @@ export default async function DashboardPage({
     answersByEvaluationId,
     allItems
   );
+
+  const itemFailureRows = buildItemFailureRanking(answersByEvaluationId, allItems, allCategories);
 
   const rankingData = branchRows
     .filter((r) => r.finalScorePct !== null)
@@ -149,6 +158,7 @@ export default async function DashboardPage({
               followUpStatus: r.followUp?.status ?? "pendiente",
             }))}
           />
+          <BulkPdfButton month={month} year={year} monthLabel={monthLabel(month, year)} />
           <ArchivePanel month={month} year={year} monthLabel={monthLabel(month, year)} />
         </div>
       </div>
@@ -161,6 +171,13 @@ export default async function DashboardPage({
       </section>
 
       <section>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">
+          Comparativo vs {monthLabel(prev.month, prev.year)}
+        </h2>
+        <ComparisonTable rows={comparisonRows} previousLabel={monthLabel(prev.month, prev.year)} />
+      </section>
+
+      <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-800">Tendencia histórica nacional</h2>
         <TrendChart data={trendData} />
       </section>
@@ -168,6 +185,13 @@ export default async function DashboardPage({
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-800">Cumplimiento por categoría de {monthLabel(month, year)}</h2>
         <CategoryMatrix categories={allCategories} rows={categoryMatrixRows} />
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">
+          Puntos de checklist con más incumplimiento de {monthLabel(month, year)}
+        </h2>
+        <ItemFailureRanking rows={itemFailureRows} />
       </section>
 
       <section>

@@ -78,6 +78,69 @@ export function monthLabel(month: number, year: number) {
   return `${MONTHS[month - 1]} ${String(year).slice(2)}`;
 }
 
+export type MonthComparisonRow = {
+  branchCode: string;
+  currentPct: number | null;
+  previousPct: number | null;
+  deltaPct: number | null;
+};
+
+/** Compara la calificación final de cada sucursal contra el mes anterior. */
+export function buildMonthComparison(currentRows: BranchRow[], previousRows: BranchRow[]): MonthComparisonRow[] {
+  const prevPctByBranchId = new Map(previousRows.map((r) => [r.branch.id, r.finalScorePct]));
+  return currentRows.map((row) => {
+    const previousPct = prevPctByBranchId.get(row.branch.id) ?? null;
+    const currentPct = row.finalScorePct;
+    const deltaPct = currentPct !== null && previousPct !== null ? currentPct - previousPct : null;
+    return { branchCode: row.branch.code, currentPct, previousPct, deltaPct };
+  });
+}
+
+export type ItemFailureRow = {
+  itemId: string;
+  description: string;
+  categoryName: string;
+  totalResponses: number;
+  failCount: number;
+  failRatePct: number;
+};
+
+/** Ranking de puntos de checklist con más incumplimiento, a partir de las respuestas del mes vigente. */
+export function buildItemFailureRanking(
+  answersByEvaluationId: Record<string, EvaluationAnswer[]>,
+  items: ChecklistItem[],
+  categories: Category[]
+): ItemFailureRow[] {
+  const categoryNameById = new Map(categories.map((c) => [c.id, c.name]));
+  const itemById = new Map(items.map((i) => [i.id, i]));
+  const stats = new Map<string, { total: number; fails: number }>();
+
+  for (const answers of Object.values(answersByEvaluationId)) {
+    for (const a of answers) {
+      const s = stats.get(a.checklist_item_id) ?? { total: 0, fails: 0 };
+      s.total += 1;
+      if (a.value === 0) s.fails += 1;
+      stats.set(a.checklist_item_id, s);
+    }
+  }
+
+  const rows: ItemFailureRow[] = [];
+  for (const [itemId, s] of stats.entries()) {
+    const item = itemById.get(itemId);
+    if (!item) continue;
+    rows.push({
+      itemId,
+      description: item.description,
+      categoryName: categoryNameById.get(item.category_id) ?? "—",
+      totalResponses: s.total,
+      failCount: s.fails,
+      failRatePct: Math.round((s.fails / s.total) * 100),
+    });
+  }
+
+  return rows.sort((a, b) => b.failRatePct - a.failRatePct || b.failCount - a.failCount);
+}
+
 /** Promedio nacional de cumplimiento/puntualidad por mes, para la gráfica histórica. */
 export function buildNationalTrend(evaluations: Evaluation[]) {
   const byMonth = new Map<string, { month: number; year: number; scores: number[]; punct: number[] }>();

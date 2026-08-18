@@ -1,17 +1,50 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Evaluation, EvaluationPeriod } from "@/lib/supabase/types";
 
+function isSunday(d: Date) {
+  return d.getUTCDay() === 0;
+}
+
+/** Si el día cae domingo, lo recorre al siguiente (lunes) — solo domingo cuenta como no hábil. */
+export function effectiveDueDate(year: number, month: number, day: number): Date {
+  const d = new Date(Date.UTC(year, month - 1, day));
+  if (isSunday(d)) d.setUTCDate(d.getUTCDate() + 1);
+  return d;
+}
+
+/** Resta n días hábiles (saltando domingos) a partir de una fecha ya calculada. */
+export function subtractBusinessDays(date: Date, n: number): Date {
+  const d = new Date(date);
+  let remaining = n;
+  while (remaining > 0) {
+    d.setUTCDate(d.getUTCDate() - 1);
+    if (!isSunday(d)) remaining--;
+  }
+  return d;
+}
+
 /**
- * Fechas límite del mes en curso: día 1 = inicial, día 27 = seguimiento.
+ * Fechas límite del mes: inicial vence el día 1, seguimiento el día 25 (recorridos
+ * al siguiente día hábil si caen domingo). El checklist se abre 2 días hábiles antes
+ * de cada vencimiento para dar tiempo a enviar a tiempo.
  * Se calculan en UTC para que coincidan con due_date/submitted_at guardados como
  * fecha UTC en el resto del código (ver src/app/api/cron/daily/route.ts).
  */
+export function periodDates(year: number, month: number) {
+  const inicialDue = effectiveDueDate(year, month, 1);
+  const seguimientoDue = effectiveDueDate(year, month, 25);
+  return {
+    inicialDue,
+    inicialOpen: subtractBusinessDays(inicialDue, 2),
+    seguimientoDue,
+    seguimientoOpen: subtractBusinessDays(seguimientoDue, 2),
+  };
+}
+
 export function currentMonthPeriods(now: Date) {
   const year = now.getUTCFullYear();
   const month = now.getUTCMonth() + 1;
-  const inicialDue = new Date(Date.UTC(year, month - 1, 1));
-  const seguimientoDue = new Date(Date.UTC(year, month - 1, 27));
-  return { year, month, inicialDue, seguimientoDue };
+  return { year, month, ...periodDates(year, month) };
 }
 
 /**
@@ -26,16 +59,17 @@ export async function ensureCurrentEvaluation(
   monthEvaluations: Evaluation[]
 ): Promise<Evaluation | null> {
   const now = new Date();
-  const { year, month, inicialDue, seguimientoDue } = currentMonthPeriods(now);
-  const day = now.getUTCDate();
+  const { year, month, inicialDue, seguimientoDue, seguimientoOpen } = currentMonthPeriods(now);
+  const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 
   const inicial = monthEvaluations.find((e) => e.period === "inicial");
   const seguimiento = monthEvaluations.find((e) => e.period === "seguimiento");
 
-  // El periodo "seguimiento" no se ofrece antes del día 27, aunque "inicial" ya se
-  // haya enviado — antes se creaba de inmediato al terminar "inicial", lo cual rompía
-  // el dashboard (tomaba esa evaluación vacía en vez de la ya llenada).
-  if (day < 27) {
+  // El periodo "seguimiento" no se ofrece antes de que abra (2 días hábiles antes de
+  // su vencimiento), aunque "inicial" ya se haya enviado — antes se creaba de inmediato
+  // al terminar "inicial", lo cual rompía el dashboard (tomaba esa evaluación vacía en
+  // vez de la ya llenada).
+  if (today < seguimientoOpen) {
     if (inicial?.status === "pendiente") return inicial;
     if (!inicial) return createEvaluation(supabase, branchId, "inicial", month, year, inicialDue);
     return null;

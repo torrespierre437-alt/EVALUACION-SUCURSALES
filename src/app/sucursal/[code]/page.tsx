@@ -44,7 +44,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
   const allEvaluations = (evaluations as Evaluation[] | null) ?? [];
   let pendingEvaluation = allEvaluations.find((e) => e.status === "pendiente") ?? null;
 
-  const { month, year } = currentMonthPeriods(new Date());
+  const { month, year, seguimientoOpen } = currentMonthPeriods(new Date());
   const monthEvaluations = allEvaluations.filter((e) => e.month === month && e.year === year);
 
   if (!pendingEvaluation) {
@@ -53,11 +53,12 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
 
   const inicialSubmitted = monthEvaluations.some((e) => e.period === "inicial" && e.status !== "pendiente");
   const seguimientoSubmitted = monthEvaluations.some((e) => e.period === "seguimiento" && e.status !== "pendiente");
+  const seguimientoOpenLabel = seguimientoOpen.toLocaleDateString("es-MX", { day: "numeric", month: "long" });
   const completionMessage =
     inicialSubmitted && seguimientoSubmitted
       ? "Ya enviaste la evaluación inicial y de seguimiento de este mes. ¡Gracias!"
       : inicialSubmitted
-        ? "Ya enviaste tu evaluación inicial de este mes. La de seguimiento se habilita a partir del día 27."
+        ? `Ya enviaste tu evaluación inicial de este mes. La de seguimiento se habilita a partir del ${seguimientoOpenLabel}.`
         : "No hay una evaluación pendiente por enviar en este momento.";
 
   let existingAnswers: EvaluationAnswer[] = [];

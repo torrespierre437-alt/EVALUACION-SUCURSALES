@@ -11,7 +11,7 @@ export function RankingChart({ data }: { data: { branch: string; score: number }
         <BarChart data={sorted} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="branch" tick={{ fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={60} />
-          <YAxis domain={[0, 100]} tick={{ fontSize: 11 }} />
+          <YAxis domain={[1, 100]} tick={{ fontSize: 11 }} allowDecimals={false} tickCount={6} />
           <Tooltip />
           <Bar dataKey="score" name="Calificación final %" radius={[4, 4, 0, 0]}>
             {sorted.map((d, i) => (

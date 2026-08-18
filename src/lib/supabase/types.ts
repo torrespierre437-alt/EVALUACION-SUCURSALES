@@ -40,6 +40,7 @@ export interface Evaluation {
   punctuality_score: number | null;
   evaluation_score: number | null;
   status: EvaluationStatus;
+  signature_url: string | null;
   created_at: string;
 }
 
