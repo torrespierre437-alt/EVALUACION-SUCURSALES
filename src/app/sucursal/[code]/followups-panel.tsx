@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { addFollowupNote, resolveFollowup, createFollowup } from "./actions";
+import { formatInstantDateMx } from "@/lib/format-date";
 import type { Followup } from "@/lib/supabase/types";
 
 export function FollowupsPanel({
@@ -62,7 +63,7 @@ export function FollowupsPanel({
             </div>
             {f.last_note_at && (
               <p className="mt-1 text-xs text-slate-500">
-                Último seguimiento: {new Date(f.last_note_at).toLocaleDateString("es-MX")} — {f.last_note}
+                Último seguimiento: {formatInstantDateMx(f.last_note_at)} — {f.last_note}
               </p>
             )}
             <div className="mt-2 flex gap-2">

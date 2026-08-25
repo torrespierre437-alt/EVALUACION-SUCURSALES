@@ -14,6 +14,26 @@
 export type Answer = { weight: number; value: 0 | 1 };
 
 const LATE_PENALTY_PER_DAY = 0.03;
+const MX_TIME_ZONE = "America/Mexico_City";
+
+/** Índice de día de calendario (días desde época) de una fecha, en huso horario de México. */
+function mxDayIndex(date: Date): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: MX_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const y = Number(parts.find((p) => p.type === "year")!.value);
+  const m = Number(parts.find((p) => p.type === "month")!.value);
+  const d = Number(parts.find((p) => p.type === "day")!.value);
+  return Math.floor(Date.UTC(y, m - 1, d) / 86_400_000);
+}
+
+/** Índice de día de calendario de una fecha "pura" (medianoche UTC, sin hora real — ver due_date). */
+function utcDayIndex(date: Date): number {
+  return Math.floor(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()) / 86_400_000);
+}
 
 /** score de una categoría = sum(valor * peso) / sum(peso) */
 export function categoryScore(answers: Answer[]): number | null {
@@ -52,9 +72,14 @@ export function finalScore(followUpEvaluationScore: number | null, monthlyPunctu
   return parts.reduce((s, v) => s + v, 0) / parts.length;
 }
 
+/**
+ * Días de atraso comparando el DÍA de calendario en huso horario de México (no la
+ * diferencia cruda en milisegundos): due_date se guarda como medianoche UTC del día
+ * límite, así que comparar instantes directamente marcaba como "tardío" cualquier
+ * envío hecho en horario de oficina de México el mismo día límite (México va 6h
+ * detrás de UTC, así que ya eran más de 0ms de diferencia desde temprano en la mañana).
+ */
 export function daysLateBetween(dueDate: Date, submittedAt: Date | null): number {
   if (!submittedAt) return 0;
-  const ms = submittedAt.getTime() - dueDate.getTime();
-  const days = Math.ceil(ms / (1000 * 60 * 60 * 24));
-  return Math.max(0, days);
+  return Math.max(0, mxDayIndex(submittedAt) - utcDayIndex(dueDate));
 }

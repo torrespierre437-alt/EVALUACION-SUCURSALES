@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { MessageSquare, FileDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { formatInstantMx, formatInstantDateMx } from "@/lib/format-date";
 import { StatusBadge } from "../status-badge";
 import type {
   Category,
@@ -97,7 +98,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
             <h3 className="text-sm font-semibold text-slate-800">{label}</h3>
             <p className="text-xs text-slate-500">
               Vence {evaluation.due_date}
-              {evaluation.submitted_at && ` · Enviado ${new Date(evaluation.submitted_at).toLocaleString("es-MX")}`}
+              {evaluation.submitted_at && ` · Enviado ${formatInstantMx(evaluation.submitted_at)}`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -198,7 +199,7 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
                 <ul className="mt-2 space-y-1 border-t border-slate-100 pt-2">
                   {(notesByFollowupId[f.id] ?? []).map((n) => (
                     <li key={n.id} className="text-xs text-slate-500">
-                      {new Date(n.noted_at).toLocaleDateString("es-MX")} — {n.note}
+                      {formatInstantDateMx(n.noted_at)} — {n.note}
                     </li>
                   ))}
                   {(notesByFollowupId[f.id] ?? []).length === 0 && (

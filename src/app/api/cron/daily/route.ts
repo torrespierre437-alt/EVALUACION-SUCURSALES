@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { punctualityScore, daysLateBetween } from "@/lib/scoring";
 import { periodDates } from "@/lib/evaluations";
+import { formatCalendarDate } from "@/lib/format-date";
 import { sendEmail, reminderEmail, lateAlertEmail } from "@/lib/notifications/email";
 import { sendPush } from "@/lib/notifications/push";
 import type { Branch, Evaluation, Profile } from "@/lib/supabase/types";
@@ -158,7 +159,7 @@ async function createAndNotify(
     if (!profile) continue;
 
     const formUrl = `${APP_URL}/sucursal/${branch.code}`;
-    const dueLabel = dueDate.toLocaleDateString("es-MX", { day: "numeric", month: "long" });
+    const dueLabel = formatCalendarDate(dueDate, { day: "numeric", month: "long" });
     const { subject, html } = reminderEmail(branch.name, period, dueLabel, formUrl);
     if (profile.email) await sendEmail(profile.email, subject, html);
     await sendPush(

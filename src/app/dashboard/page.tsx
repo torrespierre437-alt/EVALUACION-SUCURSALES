@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
+import { formatInstantDateMx } from "@/lib/format-date";
 import {
   buildBranchRows,
   buildCategoryMatrix,
@@ -268,7 +269,7 @@ export default async function DashboardPage({
                       <td className="px-3 py-2 text-slate-500">
                         {f.last_note_at ? (
                           <>
-                            {new Date(f.last_note_at).toLocaleDateString("es-MX")} — {f.last_note}
+                            {formatInstantDateMx(f.last_note_at)} — {f.last_note}
                           </>
                         ) : (
                           "Sin seguimiento todavía"

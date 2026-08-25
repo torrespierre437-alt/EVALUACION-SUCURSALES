@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { categoryScore, evaluationScore, monthlyPunctuality, finalScore } from "@/lib/scoring";
 import { monthLabel } from "@/lib/dashboard";
+import { formatInstantMx, formatInstantDateMx } from "@/lib/format-date";
 import type {
   Branch,
   Category,
@@ -113,7 +114,7 @@ export async function GET(request: Request) {
         ev.status,
         ev.evaluation_score !== null ? String(Math.round(ev.evaluation_score * 100)) : "",
         ev.punctuality_score !== null ? String(Math.round(ev.punctuality_score * 100)) : "",
-        ev.submitted_at ? new Date(ev.submitted_at).toLocaleString("es-MX") : "",
+        ev.submitted_at ? formatInstantMx(ev.submitted_at) : "",
       ]);
     }
     const inicial = byBranchPeriod.get(`${branch.id}:inicial`);
@@ -197,7 +198,7 @@ export async function GET(request: Request) {
           branch?.code ?? "",
           f.description,
           f.status,
-          new Date(n.noted_at).toLocaleDateString("es-MX"),
+          formatInstantDateMx(n.noted_at),
           n.note,
         ]);
       }

@@ -1,5 +1,6 @@
 import { Document, Page, View, Text, Image, StyleSheet } from "@react-pdf/renderer";
 import type { Branch, Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup, FollowupNote } from "@/lib/supabase/types";
+import { formatInstantMx, formatInstantDateMx } from "@/lib/format-date";
 
 export type PhotoData = { data: Buffer; format: "jpg" | "png" };
 
@@ -139,7 +140,7 @@ const STATUS_COLOR: Record<string, string> = {
 
 function fmtDate(value: string | null) {
   if (!value) return "—";
-  return new Date(value).toLocaleString("es-MX", { dateStyle: "medium", timeStyle: "short" });
+  return formatInstantMx(value, { dateStyle: "medium", timeStyle: "short" });
 }
 
 function fmtPct(value: number | null) {
@@ -314,7 +315,7 @@ export function EvaluationDocument({
                 </Text>
                 {notes.map((n) => (
                   <Text key={n.id} style={styles.followupMeta}>
-                    {new Date(n.noted_at).toLocaleDateString("es-MX")} — {n.note}
+                    {formatInstantDateMx(n.noted_at)} — {n.note}
                   </Text>
                 ))}
               </View>

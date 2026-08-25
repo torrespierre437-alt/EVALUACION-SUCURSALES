@@ -4,6 +4,7 @@ import { ChecklistForm } from "./checklist-form";
 import { FollowupsPanel } from "./followups-panel";
 import { HistoryChart } from "./history-chart";
 import { currentMonthPeriods, ensureCurrentEvaluation } from "@/lib/evaluations";
+import { formatCalendarDate } from "@/lib/format-date";
 import type { Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup } from "@/lib/supabase/types";
 
 export default async function SucursalPage({ params }: { params: Promise<{ code: string }> }) {
@@ -53,7 +54,7 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
 
   const inicialSubmitted = monthEvaluations.some((e) => e.period === "inicial" && e.status !== "pendiente");
   const seguimientoSubmitted = monthEvaluations.some((e) => e.period === "seguimiento" && e.status !== "pendiente");
-  const seguimientoOpenLabel = seguimientoOpen.toLocaleDateString("es-MX", { day: "numeric", month: "long" });
+  const seguimientoOpenLabel = formatCalendarDate(seguimientoOpen, { day: "numeric", month: "long" });
   const completionMessage =
     inicialSubmitted && seguimientoSubmitted
       ? "Ya enviaste la evaluación inicial y de seguimiento de este mes. ¡Gracias!"
