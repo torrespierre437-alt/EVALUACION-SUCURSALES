@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { formatInstantDateMx } from "@/lib/format-date";
 import {
   buildBranchRows,
   buildCategoryMatrix,
@@ -17,6 +16,7 @@ import { TrendChart } from "./trend-chart";
 import { CategoryMatrix } from "./category-matrix";
 import { ComparisonTable } from "./comparison-table";
 import { ItemFailureRanking } from "./item-failure-ranking";
+import { PendientesPanel } from "./pendientes-panel";
 import { StatusBadge } from "./status-badge";
 import { ExportButton } from "./export-button";
 import { ArchivePanel } from "./archive-panel";
@@ -104,6 +104,13 @@ export default async function DashboardPage({
   const nationalAvg = rankingData.length
     ? Math.round(rankingData.reduce((s, r) => s + r.score, 0) / rankingData.length)
     : null;
+
+  const followupsWithBranch = allFollowups
+    .map((f) => {
+      const branch = branchByEncId.get(f.branch_id);
+      return branch ? { ...f, branchCode: branch.code } : null;
+    })
+    .filter((f): f is NonNullable<typeof f> => f !== null);
 
   return (
     <div className="mx-auto min-w-0 max-w-6xl space-y-8 px-4 py-6">
@@ -237,51 +244,9 @@ export default async function DashboardPage({
 
       <section>
         <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          Pendientes abiertos ({allFollowups.length})
+          Pendientes abiertos ({followupsWithBranch.length})
         </h2>
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          {allFollowups.length === 0 ? (
-            <p className="p-4 text-sm text-slate-500">No hay pendientes abiertos en ninguna sucursal.</p>
-          ) : (
-            <table className="min-w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
-                  <th className="px-3 py-2 font-medium">Sucursal</th>
-                  <th className="px-3 py-2 font-medium">Pendiente</th>
-                  <th className="px-3 py-2 font-medium">Último seguimiento</th>
-                </tr>
-              </thead>
-              <tbody>
-                {allFollowups.map((f) => {
-                  const branch = branchByEncId.get(f.branch_id);
-                  return (
-                    <tr key={f.id} className="border-b border-slate-100 align-top">
-                      <td className="px-3 py-2 font-medium text-slate-700">
-                        {branch ? (
-                          <Link href={`/dashboard/${branch.code}`} className="underline hover:text-slate-900">
-                            {branch.code}
-                          </Link>
-                        ) : (
-                          "—"
-                        )}
-                      </td>
-                      <td className="px-3 py-2 text-slate-700">{f.description}</td>
-                      <td className="px-3 py-2 text-slate-500">
-                        {f.last_note_at ? (
-                          <>
-                            {formatInstantDateMx(f.last_note_at)} — {f.last_note}
-                          </>
-                        ) : (
-                          "Sin seguimiento todavía"
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <PendientesPanel followups={followupsWithBranch} />
       </section>
     </div>
   );
