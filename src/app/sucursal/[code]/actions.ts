@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { categoryScore, evaluationScore, punctualityScore, daysLateBetween } from "@/lib/scoring";
+import { sendEmail, thankYouEmail } from "@/lib/notifications/email";
+import { sendPush } from "@/lib/notifications/push";
 import type { ChecklistItem } from "@/lib/supabase/types";
 
 /**
@@ -41,7 +43,7 @@ export async function submitEvaluation(
 
   const { data: evaluation } = await supabase
     .from("evaluations")
-    .select("id, due_date")
+    .select("id, due_date, period, branch_id")
     .eq("id", evaluationId)
     .single();
   if (!evaluation) throw new Error("Evaluación no encontrada");
@@ -87,6 +89,23 @@ export async function submitEvaluation(
     })
     .eq("id", evaluationId);
   if (updateError) throw updateError;
+
+  // Agradecimiento por correo/push — no bloquea el envío si falla, y no impide
+  // confirmar al usuario que su evaluación quedó guardada.
+  const [{ data: branch }, { data: profile }] = await Promise.all([
+    supabase.from("branches").select("name").eq("id", evaluation.branch_id).single(),
+    supabase.from("profiles").select("email, push_subscription").eq("branch_id", evaluation.branch_id).maybeSingle(),
+  ]);
+  if (branch && profile) {
+    const { subject, html } = thankYouEmail(branch.name, evaluation.period, status === "a_tiempo");
+    if (profile.email) await sendEmail(profile.email, subject, html);
+    await sendPush(
+      profile.push_subscription as never,
+      "Evaluación recibida",
+      `${branch.name}: ¡gracias por enviar tu evaluación ${evaluation.period}!`,
+      `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/sucursal/${branchCode}`
+    );
+  }
 
   revalidatePath(`/sucursal/${branchCode}`);
 }

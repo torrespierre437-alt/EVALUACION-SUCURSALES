@@ -22,13 +22,18 @@ function sameDate(a: Date, b: Date) {
  * src/lib/evaluations.ts). Ese día de apertura puede caer en el mes calendario
  * anterior al del vencimiento (ej. si el día 1 cae lunes), así que se evalúan tanto
  * las fechas del mes en curso como las del mes siguiente:
- *  - Abre "inicial" del mes en curso: cierra "seguimiento" del mes anterior que siga
- *    pendiente (no_enviado), crea la evaluación "inicial" y envía recordatorio.
+ *  - Abre "inicial" del mes en curso: crea la evaluación y envía recordatorio.
  *  - Abre "seguimiento" del mes en curso: cierra "inicial" del mes en curso que siga
- *    pendiente, crea la evaluación "seguimiento" y envía recordatorio.
- *  - Abre "inicial" del mes siguiente: cierra "seguimiento" del mes en curso que siga
- *    pendiente, crea la evaluación "inicial" del mes siguiente y envía recordatorio.
+ *    pendiente (ya lleva ~24 días vencido para entonces), crea "seguimiento" y envía
+ *    recordatorio.
+ *  - Abre "inicial" del mes siguiente: crea la evaluación y envía recordatorio.
  *  - Cualquier otro día: si hay evaluaciones "pendiente" vencidas, envía alerta de atraso.
+ *
+ * IMPORTANTE: "seguimiento" del mes en curso NUNCA se cierra solo porque ya abrió el
+ * "inicial" del mes siguiente (2 días hábiles antes del día 1) — eso pasaba antes y
+ * le quitaba a las sucursales el resto del mes para enviarlo tarde (se les convertía
+ * en el "inicial" del mes siguiente sin avisar). En vez de eso, closePastMonthPending
+ * cierra cualquier "pendiente" cuyo mes/año ya haya terminado de verdad.
  *
  * Prueba manual: GET /api/cron/daily?date=2026-09-01&secret=... (override de fecha en dev).
  */
@@ -66,16 +71,16 @@ export async function GET(request: Request) {
 
   const actions: string[] = [];
 
+  // Da margen hasta el último día del mes: solo cierra "pendiente" cuyo mes/año ya
+  // terminó de verdad, sin importar cuándo abrió el periodo siguiente.
+  await closePastMonthPending(supabase, year, month, actions);
+
   if (sameDate(todayOnly, thisMonth.inicialOpen)) {
-    const prevMonth = month === 1 ? 12 : month - 1;
-    const prevYear = month === 1 ? year - 1 : year;
-    await closeStalePending(supabase, "seguimiento", prevMonth, prevYear, actions);
     await createAndNotify(supabase, branchList, profileByBranch, "inicial", month, year, thisMonth.inicialDue, actions);
   } else if (sameDate(todayOnly, thisMonth.seguimientoOpen)) {
     await closeStalePending(supabase, "inicial", month, year, actions);
     await createAndNotify(supabase, branchList, profileByBranch, "seguimiento", month, year, thisMonth.seguimientoDue, actions);
   } else if (sameDate(todayOnly, nextMonthPeriods.inicialOpen)) {
-    await closeStalePending(supabase, "seguimiento", month, year, actions);
     await createAndNotify(
       supabase,
       branchList,
@@ -109,6 +114,29 @@ async function closeStalePending(
     .eq("status", "pendiente");
 
   for (const row of (stale as { id: string }[]) ?? []) {
+    await supabase
+      .from("evaluations")
+      .update({ status: "no_enviado", punctuality_score: 0 })
+      .eq("id", row.id);
+    actions.push(`closed_no_enviado:${row.id}`);
+  }
+}
+
+/** Cierra "pendiente" de meses/años estrictamente anteriores al actual (les da hasta el último día del mes). */
+async function closePastMonthPending(
+  supabase: ReturnType<typeof createServiceRoleClient>,
+  currentYear: number,
+  currentMonth: number,
+  actions: string[]
+) {
+  const { data: stale } = await supabase
+    .from("evaluations")
+    .select("id, month, year")
+    .eq("status", "pendiente");
+
+  for (const row of (stale as { id: string; month: number; year: number }[]) ?? []) {
+    const isPast = row.year < currentYear || (row.year === currentYear && row.month < currentMonth);
+    if (!isPast) continue;
     await supabase
       .from("evaluations")
       .update({ status: "no_enviado", punctuality_score: 0 })
@@ -161,7 +189,10 @@ async function createAndNotify(
     const formUrl = `${APP_URL}/sucursal/${branch.code}`;
     const dueLabel = formatCalendarDate(dueDate, { day: "numeric", month: "long" });
     const { subject, html } = reminderEmail(branch.name, period, dueLabel, formUrl);
-    if (profile.email) await sendEmail(profile.email, subject, html);
+    if (profile.email) {
+      const sent = await sendEmail(profile.email, subject, html);
+      if (!sent) actions.push(`email_failed:${branch.code}`);
+    }
     await sendPush(
       profile.push_subscription as never,
       "Evaluación pendiente",
@@ -196,7 +227,10 @@ async function sendLateAlerts(
 
     const formUrl = `${APP_URL}/sucursal/${branch.code}`;
     const { subject, html } = lateAlertEmail(branch.name, daysLate, formUrl);
-    if (profile.email) await sendEmail(profile.email, subject, html);
+    if (profile.email) {
+      const sent = await sendEmail(profile.email, subject, html);
+      if (!sent) actions.push(`email_failed:${branch.code}`);
+    }
     await sendPush(
       profile.push_subscription as never,
       "Evaluación atrasada",
