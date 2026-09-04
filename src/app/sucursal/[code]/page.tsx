@@ -1,10 +1,12 @@
 import { notFound, redirect } from "next/navigation";
+import { FileDown } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { ChecklistForm } from "./checklist-form";
 import { FollowupsPanel } from "./followups-panel";
 import { HistoryChart } from "./history-chart";
 import { currentMonthPeriods, ensureCurrentEvaluation } from "@/lib/evaluations";
 import { formatCalendarDate } from "@/lib/format-date";
+import { monthLabel } from "@/lib/dashboard";
 import type { Category, ChecklistItem, Evaluation, EvaluationAnswer, Followup } from "@/lib/supabase/types";
 
 export default async function SucursalPage({ params }: { params: Promise<{ code: string }> }) {
@@ -104,8 +106,32 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
 
       <FollowupsPanel branchCode={branch.code} branchId={branch.id} followups={(followups as Followup[]) ?? []} />
 
+      <div className="rounded-lg border border-slate-200 bg-white p-4">
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">
+          PDF de {monthLabel(month, year)}
+        </h2>
+        {monthEvaluations.some((e) => e.submitted_at) ? (
+          <div className="flex flex-wrap gap-2">
+            {monthEvaluations
+              .filter((e) => e.submitted_at)
+              .map((e) => (
+                <a
+                  key={e.id}
+                  href={`/api/sucursal/evaluation-pdf?evaluationId=${e.id}`}
+                  className="flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+                >
+                  <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                  {e.period === "inicial" ? "Inicial" : "Seguimiento"}
+                </a>
+              ))}
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Aún no hay evaluaciones enviadas este mes.</p>
+        )}
+      </div>
+
       <div>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">Historial</h2>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Tus gráficos — puntualidad y cumplimiento</h2>
         <HistoryChart evaluations={(evaluations as Evaluation[]) ?? []} />
       </div>
     </div>
