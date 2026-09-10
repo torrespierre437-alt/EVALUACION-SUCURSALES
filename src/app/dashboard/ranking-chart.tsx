@@ -51,15 +51,7 @@ export function RankingChart({ data }: { data: Row[] }) {
             strokeDasharray="4 3"
             dot={{ r: 3, fill: "#0f172a" }}
             connectNulls
-          >
-            <LabelList
-              dataKey="puntualidad"
-              position="top"
-              fontSize={9}
-              fill="#0f172a"
-              formatter={(v) => (v == null ? "" : `${v}`)}
-            />
-          </Line>
+          />
         </ComposedChart>
       </ResponsiveContainer>
     </div>
