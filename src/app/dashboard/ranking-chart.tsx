@@ -36,14 +36,14 @@ export function RankingChart({ data }: { data: Row[] }) {
             ))}
             <LabelList
               dataKey="score"
-              position="top"
+              position="insideTop"
               fontSize={9}
-              fill="#334155"
-              formatter={(v) => `${v}%`}
+              fill="#ffffff"
+              formatter={(v) => `${v}`}
             />
           </Bar>
           <Line
-            type="monotone"
+            type="linear"
             dataKey="puntualidad"
             name="Puntualidad %"
             stroke="#0f172a"
@@ -51,7 +51,15 @@ export function RankingChart({ data }: { data: Row[] }) {
             strokeDasharray="4 3"
             dot={{ r: 3, fill: "#0f172a" }}
             connectNulls
-          />
+          >
+            <LabelList
+              dataKey="puntualidad"
+              position="top"
+              fontSize={9}
+              fill="#0f172a"
+              formatter={(v) => (v == null ? "" : `${v}`)}
+            />
+          </Line>
         </ComposedChart>
       </ResponsiveContainer>
     </div>
