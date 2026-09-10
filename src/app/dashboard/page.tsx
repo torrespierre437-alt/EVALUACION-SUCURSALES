@@ -182,7 +182,7 @@ export default async function DashboardPage({
         <div className="space-y-4">
           <div>
             <p className="mb-1.5 text-xs font-medium text-slate-500">
-              Calificación final por sucursal — {monthLabel(month, year)}
+              Calificación final (barra) y puntualidad (línea) por sucursal — {monthLabel(month, year)}
             </p>
             <RankingChart data={rankingData} />
           </div>
@@ -197,6 +197,10 @@ export default async function DashboardPage({
         <h2 className="mb-2 text-sm font-semibold text-slate-800">
           Comparativo vs {monthLabel(prev.month, prev.year)}
         </h2>
+        <p className="mb-2 text-xs text-slate-500">
+          Compara la <strong>calificación final</strong> (80% checklist + 20% puntualidad) contra el mes anterior — no
+          la puntualidad sola.
+        </p>
         <ComparisonTable rows={comparisonRows} previousLabel={monthLabel(prev.month, prev.year)} />
       </section>
 
