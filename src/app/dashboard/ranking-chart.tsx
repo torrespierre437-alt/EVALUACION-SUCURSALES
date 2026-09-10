@@ -1,26 +1,50 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer, Cell } from "recharts";
+import {
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ResponsiveContainer,
+  Legend,
+  Cell,
+} from "recharts";
 
 const Y_AXIS_TICKS = Array.from({ length: 51 }, (_, i) => i * 2);
 
-export function RankingChart({ data }: { data: { branch: string; score: number }[] }) {
+type Row = { branch: string; score: number; puntualidad: number | null };
+
+export function RankingChart({ data }: { data: Row[] }) {
   const sorted = [...data].sort((a, b) => b.score - a.score);
 
   return (
     <div className="h-[36rem] w-full rounded-lg border border-slate-200 bg-white p-4">
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={sorted} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+        <ComposedChart data={sorted} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
           <XAxis dataKey="branch" tick={{ fontSize: 11 }} interval={0} angle={-45} textAnchor="end" height={60} />
           <YAxis domain={[0, 100]} tick={{ fontSize: 9 }} allowDecimals={false} ticks={Y_AXIS_TICKS} />
           <Tooltip />
+          <Legend />
           <Bar dataKey="score" name="Calificación final %" radius={[4, 4, 0, 0]}>
             {sorted.map((d, i) => (
               <Cell key={i} fill={d.score >= 90 ? "#16a34a" : d.score >= 75 ? "#d97706" : "#dc2626"} />
             ))}
           </Bar>
-        </BarChart>
+          <Line
+            type="monotone"
+            dataKey="puntualidad"
+            name="Puntualidad %"
+            stroke="#2563eb"
+            strokeWidth={2}
+            strokeDasharray="4 3"
+            dot={{ r: 3, fill: "#2563eb" }}
+            connectNulls
+          />
+        </ComposedChart>
       </ResponsiveContainer>
     </div>
   );

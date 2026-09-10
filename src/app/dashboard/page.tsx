@@ -97,7 +97,11 @@ export default async function DashboardPage({
 
   const rankingData = branchRows
     .filter((r) => r.finalScorePct !== null)
-    .map((r) => ({ branch: r.branch.code, score: r.finalScorePct as number }));
+    .map((r) => ({
+      branch: r.branch.code,
+      score: r.finalScorePct as number,
+      puntualidad: r.monthlyPunctualityPct,
+    }));
 
   const trendData = buildNationalTrend(allEvaluations);
 

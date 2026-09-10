@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StatusBadge } from "./status-badge";
 import type { BranchRow } from "@/lib/dashboard";
+import type { Evaluation } from "@/lib/supabase/types";
 
 function scoreColor(pct: number | null) {
   if (pct === null) return "text-slate-400";
@@ -10,6 +11,21 @@ function scoreColor(pct: number | null) {
 }
 
 const fmt = (pct: number | null) => (pct === null ? "—" : `${pct}%`);
+
+function EnvioCell({ evaluation }: { evaluation: Evaluation | null }) {
+  const status = evaluation?.status ?? "pendiente";
+  const daysLate = evaluation?.days_late ?? 0;
+  return (
+    <div className="flex items-center gap-1.5 whitespace-nowrap">
+      <StatusBadge status={status} />
+      {status === "tardio" && daysLate > 0 && (
+        <span className="text-xs font-medium text-amber-700">
+          +{daysLate} {daysLate === 1 ? "día" : "días"}
+        </span>
+      )}
+    </div>
+  );
+}
 
 export function ScoreBreakdown({ rows }: { rows: BranchRow[] }) {
   const sorted = [...rows].sort((a, b) => (b.finalScorePct ?? -1) - (a.finalScorePct ?? -1));
@@ -37,10 +53,10 @@ export function ScoreBreakdown({ rows }: { rows: BranchRow[] }) {
                 </Link>
               </td>
               <td className="px-3 py-2">
-                <StatusBadge status={r.initial?.status ?? "pendiente"} />
+                <EnvioCell evaluation={r.initial} />
               </td>
               <td className="px-3 py-2">
-                <StatusBadge status={r.followUp?.status ?? "pendiente"} />
+                <EnvioCell evaluation={r.followUp} />
               </td>
               <td className={`px-3 py-2 ${scoreColor(r.initialScorePct)}`}>{fmt(r.initialScorePct)}</td>
               <td className={`px-3 py-2 ${scoreColor(r.followUpScorePct)}`}>{fmt(r.followUpScorePct)}</td>
