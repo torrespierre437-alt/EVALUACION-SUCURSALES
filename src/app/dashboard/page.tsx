@@ -16,8 +16,8 @@ import { TrendChart } from "./trend-chart";
 import { CategoryMatrix } from "./category-matrix";
 import { ComparisonTable } from "./comparison-table";
 import { ItemFailureRanking } from "./item-failure-ranking";
+import { ScoreBreakdown } from "./score-breakdown";
 import { PendientesPanel } from "./pendientes-panel";
-import { StatusBadge } from "./status-badge";
 import { ExportButton } from "./export-button";
 import { ArchivePanel } from "./archive-panel";
 import { BulkPdfButton } from "./bulk-pdf-button";
@@ -160,6 +160,8 @@ export default async function DashboardPage({
             branchRows={branchRows.map((r) => ({
               code: r.branch.code,
               categoryScores: categoryMatrixRows.find((c) => c.branchCode === r.branch.code)?.scoresByCategory ?? {},
+              initialScorePct: r.initialScorePct,
+              followUpScorePct: r.followUpScorePct,
               punctualityPct: r.monthlyPunctualityPct,
               finalScorePct: r.finalScorePct,
               initialStatus: r.initial?.status ?? "pendiente",
@@ -172,10 +174,19 @@ export default async function DashboardPage({
       </div>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          Ranking — calificación final de {monthLabel(month, year)}
-        </h2>
-        <RankingChart data={rankingData} />
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Ranking y tendencia</h2>
+        <div className="space-y-4">
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-slate-500">
+              Calificación final por sucursal — {monthLabel(month, year)}
+            </p>
+            <RankingChart data={rankingData} />
+          </div>
+          <div>
+            <p className="mb-1.5 text-xs font-medium text-slate-500">Promedio nacional mes a mes</p>
+            <TrendChart data={trendData} />
+          </div>
+        </div>
       </section>
 
       <section>
@@ -183,11 +194,6 @@ export default async function DashboardPage({
           Comparativo vs {monthLabel(prev.month, prev.year)}
         </h2>
         <ComparisonTable rows={comparisonRows} previousLabel={monthLabel(prev.month, prev.year)} />
-      </section>
-
-      <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">Tendencia histórica nacional</h2>
-        <TrendChart data={trendData} />
       </section>
 
       <section>
@@ -203,43 +209,12 @@ export default async function DashboardPage({
       </section>
 
       <section>
-        <h2 className="mb-2 text-sm font-semibold text-slate-800">Puntualidad de envío de {monthLabel(month, year)}</h2>
-        <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50 text-left text-slate-600">
-                <th className="px-3 py-2 font-medium">Sucursal</th>
-                <th className="px-3 py-2 font-medium">Inicial</th>
-                <th className="px-3 py-2 font-medium">Seguimiento</th>
-                <th className="px-3 py-2 font-medium">Puntualidad %</th>
-                <th className="px-3 py-2 font-medium">Calificación final</th>
-              </tr>
-            </thead>
-            <tbody>
-              {branchRows.map((row) => (
-                <tr key={row.branch.id} className="border-b border-slate-100">
-                  <td className="px-3 py-2 font-medium text-slate-700">
-                    <Link href={`/dashboard/${row.branch.code}`} className="underline hover:text-slate-900">
-                      {row.branch.code}
-                    </Link>
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={row.initial?.status ?? "pendiente"} />
-                  </td>
-                  <td className="px-3 py-2">
-                    <StatusBadge status={row.followUp?.status ?? "pendiente"} />
-                  </td>
-                  <td className="px-3 py-2 text-slate-600">
-                    {row.monthlyPunctualityPct !== null ? `${row.monthlyPunctualityPct}%` : "—"}
-                  </td>
-                  <td className="px-3 py-2 font-semibold text-slate-800">
-                    {row.finalScorePct !== null ? `${row.finalScorePct}%` : "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <h2 className="mb-2 text-sm font-semibold text-slate-800">Calificación de {monthLabel(month, year)}</h2>
+        <p className="mb-2 text-xs text-slate-500">
+          Final = 80% calificación de seguimiento + 20% puntualidad. La puntualidad resta 3% por cada día de
+          atraso y es el promedio del envío inicial y el de seguimiento.
+        </p>
+        <ScoreBreakdown rows={branchRows} />
       </section>
 
       <section>

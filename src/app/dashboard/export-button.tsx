@@ -7,6 +7,8 @@ import type { Category, EvaluationStatus } from "@/lib/supabase/types";
 type BranchExportRow = {
   code: string;
   categoryScores: Record<string, number | null>;
+  initialScorePct: number | null;
+  followUpScorePct: number | null;
   punctualityPct: number | null;
   finalScorePct: number | null;
   initialStatus: EvaluationStatus;
@@ -37,6 +39,8 @@ export function ExportButton({ month, year, categories, branchRows }: Props) {
     const header = [
       "Sucursal",
       ...categories.map((c) => c.name),
+      "Calif. inicial %",
+      "Calif. seguimiento %",
       "Puntualidad %",
       "Calificación final %",
       "Estado inicial",
@@ -49,6 +53,8 @@ export function ExportButton({ month, year, categories, branchRows }: Props) {
         const v = r.categoryScores[c.id];
         return v === null || v === undefined ? "" : String(v);
       }),
+      r.initialScorePct === null ? "" : String(r.initialScorePct),
+      r.followUpScorePct === null ? "" : String(r.followUpScorePct),
       r.punctualityPct === null ? "" : String(r.punctualityPct),
       r.finalScorePct === null ? "" : String(r.finalScorePct),
       STATUS_LABEL[r.initialStatus],

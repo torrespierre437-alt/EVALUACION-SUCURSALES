@@ -5,6 +5,8 @@ export type BranchRow = {
   branch: Branch;
   initial: Evaluation | null;
   followUp: Evaluation | null;
+  initialScorePct: number | null;
+  followUpScorePct: number | null;
   monthlyPunctualityPct: number | null;
   finalScorePct: number | null;
 };
@@ -24,6 +26,8 @@ export function buildBranchRows(branches: Branch[], evaluations: Evaluation[], m
       branch,
       initial,
       followUp,
+      initialScorePct: initial?.evaluation_score != null ? Math.round(initial.evaluation_score * 100) : null,
+      followUpScorePct: followUp?.evaluation_score != null ? Math.round(followUp.evaluation_score * 100) : null,
       monthlyPunctualityPct: punctuality !== null ? Math.round(punctuality * 100) : null,
       finalScorePct: final !== null ? Math.round(final * 100) : null,
     };

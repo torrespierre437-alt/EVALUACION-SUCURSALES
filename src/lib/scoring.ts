@@ -14,6 +14,8 @@
 export type Answer = { weight: number; value: 0 | 1 };
 
 const LATE_PENALTY_PER_DAY = 0.03;
+/** Cuánto pesa la puntualidad en la calificación final (el resto es el checklist). */
+export const PUNCTUALITY_WEIGHT = 0.2;
 const MX_TIME_ZONE = "America/Mexico_City";
 
 /** Índice de día de calendario (días desde época) de una fecha, en huso horario de México. */
@@ -65,11 +67,16 @@ export function monthlyPunctuality(initial: number | null, followUp: number | nu
   return parts.reduce((s, v) => s + v, 0) / parts.length;
 }
 
-/** calificación final del mes = promedio(score de seguimiento, puntualidad global) */
+/**
+ * Calificación final del mes = promedio ponderado del checklist (score de seguimiento)
+ * y la puntualidad global. El checklist pesa 80% y la puntualidad 20%: la impuntualidad
+ * baja el puntaje pero no lo hunde. Si falta uno de los dos, se usa el que haya.
+ */
 export function finalScore(followUpEvaluationScore: number | null, monthlyPunctualityScore: number | null): number | null {
-  const parts = [followUpEvaluationScore, monthlyPunctualityScore].filter((v): v is number => v !== null);
-  if (parts.length === 0) return null;
-  return parts.reduce((s, v) => s + v, 0) / parts.length;
+  if (followUpEvaluationScore === null && monthlyPunctualityScore === null) return null;
+  if (followUpEvaluationScore === null) return monthlyPunctualityScore;
+  if (monthlyPunctualityScore === null) return followUpEvaluationScore;
+  return followUpEvaluationScore * (1 - PUNCTUALITY_WEIGHT) + monthlyPunctualityScore * PUNCTUALITY_WEIGHT;
 }
 
 /**
