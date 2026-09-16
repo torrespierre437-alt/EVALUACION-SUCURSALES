@@ -51,8 +51,19 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
     e.currentTarget.setPointerCapture(e.pointerId);
     drawingRef.current = true;
     const { x, y } = pointerPos(e);
+    // Deja una marca visible desde el primer clic (antes solo se dibujaba al mover el
+    // puntero) — con mouse en PC es fácil hacer clic sin arrastrar, y eso dejaba el
+    // canvas vacío y bloqueaba el botón de enviar con "Falta firmar".
+    ctx.fillStyle = "#0f172a";
+    ctx.beginPath();
+    ctx.arc(x, y, 1.25, 0, Math.PI * 2);
+    ctx.fill();
     ctx.beginPath();
     ctx.moveTo(x, y);
+    if (!hasStroke) {
+      setHasStroke(true);
+      onChange?.(true);
+    }
   }
 
   function handlePointerMove(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -86,7 +97,12 @@ export const SignaturePad = forwardRef<SignaturePadHandle, Props>(function Signa
 
   return (
     <div className="space-y-2">
-      <div className="rounded-md border border-slate-200 bg-white">
+      <div className="relative rounded-md border border-slate-200 bg-white">
+        {!hasStroke && (
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-slate-400">
+            Firma aquí — clic (o dedo) y arrastra
+          </p>
+        )}
         <canvas
           ref={canvasRef}
           width={600}
