@@ -147,10 +147,14 @@ export default async function BranchDetailPage({ params }: { params: Promise<{ c
                       {answer.comment}
                     </p>
                   )}
-                  {answer.photo_url && (
-                    <a href={answer.photo_url} target="_blank" rel="noreferrer">
-                      <img src={answer.photo_url} alt="Evidencia" className="h-20 w-20 rounded object-cover" />
-                    </a>
+                  {(answer.photo_urls ?? []).length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {answer.photo_urls.map((url) => (
+                        <a key={url} href={url} target="_blank" rel="noreferrer">
+                          <img src={url} alt="Evidencia" className="h-20 w-20 rounded object-cover" />
+                        </a>
+                      ))}
+                    </div>
                   )}
                 </li>
               );

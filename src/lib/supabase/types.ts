@@ -50,7 +50,10 @@ export interface EvaluationAnswer {
   checklist_item_id: string;
   value: 0 | 1;
   comment: string | null;
+  /** @deprecated columna legacy, ya no se escribe — usar photo_urls */
   photo_url: string | null;
+  /** Hasta MAX_PHOTOS_PER_ITEM fotos de evidencia (ver src/lib/photos.ts). */
+  photo_urls: string[];
 }
 
 export interface Followup {

@@ -7,9 +7,9 @@ export const dynamic = "force-dynamic";
 
 /**
  * Borra de Supabase Storage las fotos de evidencia de un mes ya respaldado
- * (ver /api/admin/archive) y limpia evaluation_answers.photo_url — nunca toca
+ * (ver /api/admin/archive) y limpia evaluation_answers.photo_urls — nunca toca
  * evaluations ni el resto de evaluation_answers, así que el dashboard, el
- * historial y las calificaciones siguen intactos; solo desaparece la foto.
+ * historial y las calificaciones siguen intactos; solo desaparecen las fotos.
  */
 export async function POST(request: Request) {
   const supabase = await createClient();
@@ -40,21 +40,23 @@ export async function POST(request: Request) {
 
   const { data: answers } = await admin
     .from("evaluation_answers")
-    .select("id, photo_url")
-    .in("evaluation_id", evalIds)
-    .not("photo_url", "is", null);
-  const withPhotos = (answers as Pick<EvaluationAnswer, "id" | "photo_url">[]) ?? [];
+    .select("id, photo_urls")
+    .in("evaluation_id", evalIds);
+  const withPhotos = ((answers as Pick<EvaluationAnswer, "id" | "photo_urls">[]) ?? []).filter(
+    (a) => (a.photo_urls ?? []).length > 0
+  );
 
   if (withPhotos.length === 0) {
     return NextResponse.json({ ok: true, freed: 0 });
   }
 
   // De la URL pública .../storage/v1/object/public/evidence/<path> extraemos <path>.
+  const marker = "/object/public/evidence/";
   const paths = withPhotos
-    .map((a) => {
-      const marker = "/object/public/evidence/";
-      const idx = a.photo_url?.indexOf(marker) ?? -1;
-      return idx >= 0 ? a.photo_url!.slice(idx + marker.length) : null;
+    .flatMap((a) => a.photo_urls ?? [])
+    .map((url) => {
+      const idx = url.indexOf(marker);
+      return idx >= 0 ? url.slice(idx + marker.length) : null;
     })
     .filter((p): p is string => !!p);
 
@@ -64,7 +66,7 @@ export async function POST(request: Request) {
   }
 
   const ids = withPhotos.map((a) => a.id);
-  const { error: updateError } = await admin.from("evaluation_answers").update({ photo_url: null }).in("id", ids);
+  const { error: updateError } = await admin.from("evaluation_answers").update({ photo_urls: [] }).in("id", ids);
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }

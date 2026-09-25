@@ -129,7 +129,7 @@ export async function GET(request: Request) {
 
   // ---- CSV detallado (respuesta por respuesta) ----
   const detailRows: string[][] = [
-    ["Sucursal", "Periodo", "Categoría", "Punto", "Valor", "Comentario", "Foto (archivo en /fotos)"],
+    ["Sucursal", "Periodo", "Categoría", "Punto", "Valor", "Comentario", "Fotos (archivos en /fotos)"],
   ];
 
   const zip = new JSZip();
@@ -145,12 +145,13 @@ export async function GET(request: Request) {
       const answer = evAnswers.find((a) => a.checklist_item_id === item.id);
       if (!answer) continue;
       const category = categoryById.get(item.category_id);
-      let photoFile = "";
-      if (answer.photo_url) {
+      const photoFiles: string[] = [];
+      for (const url of answer.photo_urls ?? []) {
         photoCount++;
-        const ext = answer.photo_url.split(".").pop()?.split("?")[0] || "jpg";
-        photoFile = `${branch.code}_${ev.period}_${category?.name ?? "cat"}_${photoCount}.${ext}`;
-        photosToFetch.push({ photoFile, url: answer.photo_url });
+        const ext = url.split(".").pop()?.split("?")[0] || "jpg";
+        const photoFile = `${branch.code}_${ev.period}_${category?.name ?? "cat"}_${photoCount}.${ext}`;
+        photosToFetch.push({ photoFile, url });
+        photoFiles.push(photoFile);
       }
       detailRows.push([
         branch.code,
@@ -159,7 +160,7 @@ export async function GET(request: Request) {
         item.description,
         answer.value === 1 ? "Cumple" : "No cumple",
         answer.comment ?? "",
-        photoFile,
+        photoFiles.join("; "),
       ]);
     }
   }

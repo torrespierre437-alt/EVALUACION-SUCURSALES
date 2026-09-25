@@ -6,6 +6,7 @@ import { saveAnswer, submitEvaluation } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage } from "@/lib/image";
 import { SignaturePad, type SignaturePadHandle } from "./signature-pad";
+import { MAX_PHOTOS_PER_ITEM } from "@/lib/photos";
 import {
   pendingKey,
   savePending,
@@ -15,7 +16,7 @@ import {
 } from "@/lib/offline-queue";
 import type { Category, ChecklistItem, Evaluation, EvaluationAnswer } from "@/lib/supabase/types";
 
-type Answer = { value: 0 | 1; comment?: string; photo_url?: string };
+type Answer = { value: 0 | 1; comment?: string; photo_urls?: string[] };
 type SaveState = "idle" | "saving" | "saved" | "pending";
 
 const RETRY_INTERVAL_MS = 20000;
@@ -36,7 +37,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
       initial[a.checklist_item_id] = {
         value: a.value,
         comment: a.comment ?? undefined,
-        photo_url: a.photo_url ?? undefined,
+        photo_urls: a.photo_urls ?? [],
       };
     }
     return initial;
@@ -94,19 +95,21 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
   // Intenta sincronizar un item pendiente: sube la foto si trae una sin subir, y
   // guarda la respuesta. No lanza — regresa ok:false si algo falla (sin señal, etc.)
   // para que el que llama decida si reintentar después.
-  async function trySyncItem(item: PendingItem): Promise<{ ok: true; photoUrl?: string } | { ok: false }> {
+  async function trySyncItem(item: PendingItem): Promise<{ ok: true; photoUrls: string[] } | { ok: false }> {
     try {
-      let photoUrl = item.photoUrl;
+      // Fallback a item.photoUrl (forma vieja) por si quedó algo encolado en
+      // IndexedDB de antes de que esto pasara a soportar varias fotos.
+      let photoUrls = item.photoUrls ?? (item.photoUrl ? [item.photoUrl] : []);
       if (item.photoBlob) {
         const supabase = createClient();
         const path = `${branchId}/${item.evaluationId}/${item.itemId}-${Date.now()}.${item.photoExt ?? "jpg"}`;
         const { error } = await supabase.storage.from("evidence").upload(path, item.photoBlob, { upsert: true });
         if (error) throw error;
         const { data } = supabase.storage.from("evidence").getPublicUrl(path);
-        photoUrl = data.publicUrl;
+        photoUrls = [...photoUrls, data.publicUrl].slice(0, MAX_PHOTOS_PER_ITEM);
       }
-      await saveAnswer(item.evaluationId, item.itemId, { value: item.value, comment: item.comment, photo_url: photoUrl });
-      return { ok: true, photoUrl };
+      await saveAnswer(item.evaluationId, item.itemId, { value: item.value, comment: item.comment, photo_urls: photoUrls });
+      return { ok: true, photoUrls };
     } catch (err) {
       console.error("Error sincronizando respuesta:", err);
       return { ok: false };
@@ -123,7 +126,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
       itemId,
       value: answer.value,
       comment: answer.comment,
-      photoUrl: photoBlob ? undefined : answer.photo_url,
+      photoUrls: answer.photo_urls ?? [],
       photoBlob,
       photoExt: "jpg",
       updatedAt: Date.now(),
@@ -145,9 +148,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
         return next;
       });
       setSaveStateByItem((prev) => ({ ...prev, [itemId]: "saved" }));
-      if (result.photoUrl) {
-        setAnswers((prev) => ({ ...prev, [itemId]: { ...prev[itemId], photo_url: result.photoUrl } }));
-      }
+      setAnswers((prev) => ({ ...prev, [itemId]: { ...prev[itemId], photo_urls: result.photoUrls } }));
     } else {
       setSaveStateByItem((prev) => ({ ...prev, [itemId]: "pending" }));
     }
@@ -170,6 +171,11 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
   }
 
   async function handlePhoto(itemId: string, file: File) {
+    const currentCount = answers[itemId]?.photo_urls?.length ?? 0;
+    if (currentCount >= MAX_PHOTOS_PER_ITEM) {
+      alert(`Ya tienes el máximo de ${MAX_PHOTOS_PER_ITEM} fotos en este punto. Quita una para agregar otra.`);
+      return;
+    }
     setUploadingItemId(itemId);
     try {
       const compressed = await compressImage(file);
@@ -188,6 +194,17 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
     }
   }
 
+  // Quita una foto ya confirmada (no borra el archivo de Storage — el espacio se
+  // libera aparte con el respaldo mensual, ver /api/admin/archive/release).
+  function removePhoto(itemId: string, index: number) {
+    setAnswers((prev) => {
+      const photoUrls = (prev[itemId]?.photo_urls ?? []).filter((_, i) => i !== index);
+      const next = { ...prev, [itemId]: { ...prev[itemId], photo_urls: photoUrls } };
+      persist(itemId, next[itemId]);
+      return next;
+    });
+  }
+
   // Reintenta todo lo pendiente de esta evaluación: se llama al montar (por si quedó
   // algo sin sincronizar de una sesión anterior), al volver la conexión, y cada
   // RETRY_INTERVAL_MS mientras haya algo pendiente.
@@ -204,7 +221,11 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
       const next = { ...prev };
       for (const item of queued) {
         if (!next[item.itemId]) {
-          next[item.itemId] = { value: item.value, comment: item.comment, photo_url: item.photoUrl };
+          next[item.itemId] = {
+            value: item.value,
+            comment: item.comment,
+            photo_urls: item.photoUrls ?? (item.photoUrl ? [item.photoUrl] : []),
+          };
         }
       }
       return next;
@@ -234,9 +255,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
           return next;
         });
         setSaveStateByItem((prev) => ({ ...prev, [item.itemId]: "saved" }));
-        if (result.photoUrl) {
-          setAnswers((prev) => ({ ...prev, [item.itemId]: { ...prev[item.itemId], photo_url: result.photoUrl } }));
-        }
+        setAnswers((prev) => ({ ...prev, [item.itemId]: { ...prev[item.itemId], photo_urls: result.photoUrls } }));
       } else {
         setSaveStateByItem((prev) => ({ ...prev, [item.itemId]: "pending" }));
       }
@@ -377,6 +396,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
               {catItems.map((item) => {
                 const answer = answers[item.id];
                 const saveState = saveStateByItem[item.id] ?? "idle";
+                const photoCount = answer?.photo_urls?.length ?? 0;
                 return (
                   <li key={item.id} className="space-y-2 px-4 py-3">
                     <p className="text-sm text-slate-700">{item.description}</p>
@@ -409,7 +429,13 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                         </button>
                       </div>
 
-                      <label className="flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center rounded-md border border-slate-200 text-slate-500 hover:bg-slate-50">
+                      <label
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-slate-200 text-slate-500 ${
+                          uploadingItemId === item.id || photoCount >= MAX_PHOTOS_PER_ITEM
+                            ? "cursor-not-allowed opacity-40"
+                            : "cursor-pointer hover:bg-slate-50"
+                        }`}
+                      >
                         {uploadingItemId === item.id ? (
                           <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
                         ) : (
@@ -421,7 +447,7 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                           accept="image/*"
                           capture="environment"
                           className="hidden"
-                          disabled={uploadingItemId === item.id}
+                          disabled={uploadingItemId === item.id || photoCount >= MAX_PHOTOS_PER_ITEM}
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) handlePhoto(item.id, file);
@@ -429,27 +455,42 @@ export function ChecklistForm({ evaluation, branchId, branchCode, categories, it
                           }}
                         />
                       </label>
+                    </div>
 
-                      {(answer?.photo_url || localPreviewByItem[item.id]) && (
-                        <a
-                          href={answer?.photo_url ?? localPreviewByItem[item.id]}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="relative shrink-0"
-                        >
-                          <img
-                            src={answer?.photo_url ?? localPreviewByItem[item.id]}
-                            alt="Evidencia"
-                            className="h-9 w-9 rounded object-cover"
-                          />
-                          {!answer?.photo_url && (
+                    {(photoCount > 0 || localPreviewByItem[item.id]) && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {(answer?.photo_urls ?? []).map((url, idx) => (
+                          <div key={url} className="relative shrink-0">
+                            <a href={url} target="_blank" rel="noreferrer">
+                              <img src={url} alt="Evidencia" className="h-12 w-12 rounded object-cover" />
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(item.id, idx)}
+                              className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-slate-700 text-white"
+                              aria-label="Quitar foto"
+                            >
+                              <X className="h-2.5 w-2.5" aria-hidden="true" />
+                            </button>
+                          </div>
+                        ))}
+                        {pendingItemIds.has(item.id) && localPreviewByItem[item.id] && (
+                          <div className="relative shrink-0">
+                            <img
+                              src={localPreviewByItem[item.id]}
+                              alt="Evidencia"
+                              className="h-12 w-12 rounded object-cover"
+                            />
                             <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-amber-500">
                               <RefreshCw className="h-2 w-2 text-white" aria-hidden="true" />
                             </span>
-                          )}
-                        </a>
-                      )}
-                    </div>
+                          </div>
+                        )}
+                        <span className="text-[10px] text-slate-400">
+                          {photoCount}/{MAX_PHOTOS_PER_ITEM}
+                        </span>
+                      </div>
+                    )}
 
                     <input
                       type="text"

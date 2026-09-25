@@ -132,7 +132,7 @@ export async function buildEvaluationPdf(
   }
 
   const allAnswers = (answers as EvaluationAnswer[]) ?? [];
-  const photoUrls = allAnswers.map((a) => a.photo_url).filter((u): u is string => !!u);
+  const photoUrls = allAnswers.flatMap((a) => a.photo_urls ?? []);
   if (ev.signature_url) photoUrls.push(ev.signature_url);
   const photoDataByUrl = await fetchAndResizePhotos(photoUrls, ev.signature_url);
 

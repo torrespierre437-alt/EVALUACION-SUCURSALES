@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   badge: { fontSize: 6, fontWeight: 700, textAlign: "center", paddingVertical: 2, paddingHorizontal: 2, borderRadius: 8, width: "100%" },
   // Fila de evidencia: foto y comentario van juntos, uno al lado del otro, para no
   // gastar una línea aparte arriba (junto a la descripción) cuando hay comentario.
-  evidenceRow: { flexDirection: "row", alignItems: "flex-start", gap: 5, marginTop: 2 },
+  evidenceRow: { flexDirection: "row", flexWrap: "wrap", alignItems: "flex-start", gap: 5, marginTop: 2 },
   // maxWidth + maxHeight (sin width/height fijo ni objectFit): la foto se escala
   // completa dentro de esa caja según su aspect ratio real — una horizontal topa en
   // el ancho, una vertical topa en el alto — sin recortar y sin que una foto muy
@@ -226,7 +226,9 @@ export function EvaluationDocument({
           if (!answer) return null;
           const cumple = answer.value === 1;
           const isLast = idx === catItems.length - 1;
-          const photo = answer.photo_url ? photoSrc(answer.photo_url) : null;
+          const photos = (answer.photo_urls ?? [])
+            .map((url) => photoSrc(url))
+            .filter((p): p is PhotoData => p !== null);
           return (
               <View key={item.id} style={[styles.item, isLast ? { borderBottom: "none" } : {}]} wrap={false}>
                 <View style={styles.itemTopRow}>
@@ -244,9 +246,11 @@ export function EvaluationDocument({
                     </Text>
                   </View>
                 </View>
-                {(photo || answer.comment) && (
+                {(photos.length > 0 || answer.comment) && (
                   <View style={styles.evidenceRow}>
-                    {photo && <Image src={photo} style={styles.itemPhoto} />}
+                    {photos.map((photo, i) => (
+                      <Image key={i} src={photo} style={styles.itemPhoto} />
+                    ))}
                     {answer.comment && <Text style={styles.itemComment}>"{answer.comment}"</Text>}
                   </View>
                 )}

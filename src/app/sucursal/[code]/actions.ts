@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { categoryScore, evaluationScore, punctualityScore, daysLateBetween } from "@/lib/scoring";
 import { sendEmail, thankYouEmail } from "@/lib/notifications/email";
 import { sendPush } from "@/lib/notifications/push";
+import { MAX_PHOTOS_PER_ITEM } from "@/lib/photos";
 import type { ChecklistItem } from "@/lib/supabase/types";
 
 /**
@@ -15,7 +16,7 @@ import type { ChecklistItem } from "@/lib/supabase/types";
 export async function saveAnswer(
   evaluationId: string,
   checklistItemId: string,
-  answer: { value: 0 | 1; comment?: string; photo_url?: string }
+  answer: { value: 0 | 1; comment?: string; photo_urls?: string[] }
 ) {
   const supabase = await createClient();
   const { error } = await supabase.from("evaluation_answers").upsert(
@@ -24,7 +25,7 @@ export async function saveAnswer(
       checklist_item_id: checklistItemId,
       value: answer.value,
       comment: answer.comment ?? null,
-      photo_url: answer.photo_url ?? null,
+      photo_urls: (answer.photo_urls ?? []).slice(0, MAX_PHOTOS_PER_ITEM),
     },
     { onConflict: "evaluation_id,checklist_item_id" }
   );
@@ -35,7 +36,7 @@ export async function saveAnswer(
 export async function submitEvaluation(
   evaluationId: string,
   branchCode: string,
-  answers: Record<string, { value: 0 | 1; comment?: string; photo_url?: string }>,
+  answers: Record<string, { value: 0 | 1; comment?: string; photo_urls?: string[] }>,
   items: ChecklistItem[],
   signatureUrl: string
 ) {
@@ -53,7 +54,7 @@ export async function submitEvaluation(
     checklist_item_id,
     value: a.value,
     comment: a.comment ?? null,
-    photo_url: a.photo_url ?? null,
+    photo_urls: (a.photo_urls ?? []).slice(0, MAX_PHOTOS_PER_ITEM),
   }));
 
   const { error: answersError } = await supabase

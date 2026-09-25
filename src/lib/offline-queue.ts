@@ -14,9 +14,11 @@ export type PendingItem = {
   itemId: string;
   value: 0 | 1;
   comment?: string;
-  /** Foto ya subida en un intento anterior (se conserva al reintentar solo el texto). */
+  /** Fotos ya confirmadas antes de este intento — la nueva (photoBlob) se les suma, no las reemplaza. */
+  photoUrls?: string[];
+  /** @deprecated forma vieja (una sola foto) — solo por si quedó algo encolado en IndexedDB de antes de este cambio. */
   photoUrl?: string;
-  /** Foto todavía sin subir — se reintenta la subida junto con la respuesta. */
+  /** Foto nueva todavía sin subir — se reintenta la subida junto con la respuesta. */
   photoBlob?: Blob;
   photoExt?: string;
   updatedAt: number;
