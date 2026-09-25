@@ -50,6 +50,11 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
   const { month, year, seguimientoOpen } = currentMonthPeriods(new Date());
   const monthEvaluations = allEvaluations.filter((e) => e.month === month && e.year === year);
 
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevMonthEvaluations = allEvaluations.filter((e) => e.month === prevMonth && e.year === prevYear);
+  const pdfEvaluations = [...monthEvaluations, ...prevMonthEvaluations].filter((e) => e.submitted_at);
+
   if (!pendingEvaluation) {
     pendingEvaluation = await ensureCurrentEvaluation(supabase, branch.id, monthEvaluations);
   }
@@ -108,25 +113,23 @@ export default async function SucursalPage({ params }: { params: Promise<{ code:
 
       <div className="rounded-lg border border-slate-200 bg-white p-4">
         <h2 className="mb-2 text-sm font-semibold text-slate-800">
-          PDF de {monthLabel(month, year)}
+          PDF de {monthLabel(prevMonth, prevYear)} y {monthLabel(month, year)}
         </h2>
-        {monthEvaluations.some((e) => e.submitted_at) ? (
+        {pdfEvaluations.length > 0 ? (
           <div className="flex flex-wrap gap-2">
-            {monthEvaluations
-              .filter((e) => e.submitted_at)
-              .map((e) => (
-                <a
-                  key={e.id}
-                  href={`/api/sucursal/evaluation-pdf?evaluationId=${e.id}`}
-                  className="flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
-                  {e.period === "inicial" ? "Inicial" : "Seguimiento"}
-                </a>
-              ))}
+            {pdfEvaluations.map((e) => (
+              <a
+                key={e.id}
+                href={`/api/sucursal/evaluation-pdf?evaluationId=${e.id}`}
+                className="flex items-center gap-1 rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              >
+                <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
+                {e.period === "inicial" ? "Inicial" : "Seguimiento"} — {monthLabel(e.month, e.year)}
+              </a>
+            ))}
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Aún no hay evaluaciones enviadas este mes.</p>
+          <p className="text-sm text-slate-500">Aún no hay evaluaciones enviadas en estos dos meses.</p>
         )}
       </div>
 
